@@ -27,7 +27,11 @@
 cd "${REPO_DIR}"
 mkdir -p .local
 [ -f .local/symbols.env ] || cp docs/symbols.example.env .local/symbols.env
+# ⚠ symbols.example.env 里全是占位符：复制后按 docs/SYMBOLS.md 填成本机真实值；
+#   .local/symbols.env 是 gitignored，永远不要提交（真实路径不进 tracked 文件）。
 set -a; . .local/symbols.env; set +a
+# 自检：如果还是 /path/to 说明没填
+grep -q '^DSH_HOME=/path/to' .local/symbols.env && echo '⚠ 仍是模板占位符，请填本机真实值' || echo 'symbols-ok'
 ```
 
 自检：

@@ -83,10 +83,12 @@ driftmon 用它对齐探测路由、把「行为模板」绑定到最近一次�
 ```
 <projects>/
 ├── <dsh-checkout>/            # DSH 工作区（DSH_HOME=其下的 home/；插件产物在 home/storages/...）
-└── dsh-drift/                 # 两个仓库可放同一个目录下
+└── <workspace>/               # 两个仓库可放同一个目录下（目录名任意）
     ├── dsh-system-fingerprint/  # 插件仓库
     └── driftmon/                # 本仓库
 ```
+
+> 示例布局：目录名与位置可任意；文中不含本机真实路径（本机符号映射见 `docs/SYMBOLS.md`）。
 
 driftmon 找到插件产物目录的顺序：
 

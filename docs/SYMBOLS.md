@@ -1,14 +1,16 @@
 # 本机符号映射表（Symbols）
 
-> 本仓库文档与脚本里**不写本机绝对路径**，一律用 `${符号}` 表示机器相关字段。
+> **本文件只是「符号定义」文档；表格里的示例路径是占位示意，不是本机真实路径。**
 > 真实取值放在仓库根目录的 `.local/symbols.env`（gitignored，模板见
 > [`symbols.example.env`](symbols.example.env)）；由 agent / 部署者按本表解析后 `source` 使用。
->
 > driftmon 本身是「零运行时依赖 + 只读文件契约」，映射表只用于**落地安装与验证**，不是运行依赖。
 
 ## 1. 符号表
 
-| 符号 | 含义 | 解析方式（优先级从上到下） | 本机示例 |
+> ⚠️ 最后一列是**示例（占位，非本机值）**，只说明路径形态；真实值只在 `.local/symbols.env`
+> （gitignored，永不入库）。**不要**把本机真实路径复制回任何 tracked 文件。
+
+| 符号 | 含义 | 解析方式（优先级从上到下） | 示例（占位，非本机值） |
 | --- | --- | --- | --- |
 | `REPO_DIR` | 本仓库根目录 | `git -C <当前目录> rev-parse --show-toplevel` | `~/projects/dsh-drift/driftmon` |
 | `DRIFTMON_DIR` | 同 `REPO_DIR`（driftmon 安装/运行目录） | `.local/symbols.env`，默认 `REPO_DIR` | 同左 |
