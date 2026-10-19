@@ -21,7 +21,7 @@ node bin/driftmon.mjs status
 
 ## 检查清单
 
-- [ ] `npm test` 全过（64 项，离线桩 fetch）
+- [ ] `npm test` 全过（71 项，离线桩 fetch）
 - [ ] 没有提交凭据 / `.env` / 本机绝对路径 / 采集数据
 - [ ] 原始层未被修改（append-only）或缺少来源
 - [ ] 不存 prompt / 响应正文；key 未进入代码/配置/日志

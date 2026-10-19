@@ -46,7 +46,7 @@ test -f probes/probe-set.json && echo repo-ok
 npm test            # 等价于 node --test test/*.test.mjs
 ```
 
-期望：**64 项全过**。不通过就停下报告，不要继续配置。
+期望：**71 项全过**。不通过就停下报告，不要继续配置。
 
 ## 3. 配置
 
@@ -93,13 +93,29 @@ node bin/driftmon.mjs template check   # → ${WATCH_FILE}
 数据层不变量：`${RAW_DIR}` append-only；派生层随时可从原始层重算；改探针组必须 bump
 `probeSetVersion` 并重建基线/模板（见 [`DATA-MODEL.md`](DATA-MODEL.md)）。
 
-## 6. 与插件仓库联动（可选）
+## 6. Phase 0 噪声标定（可选、会花钱；先读 [`PHASE0-PLAN.md`](PHASE0-PLAN.md)）
+
+> 这是「让阈值可信」的前提，**不是安装必需**。真正采集前必须先得到用户明确授权：
+> 30 轮 ≈ 2 小时、≈1.1–1.4M token、≈$0.36；key 只从环境变量读。
+
+1. dry-run（不花钱）：`./scripts/phase0-calibrate.sh --dry-run`
+2. 冒烟（可选，~38k token）：`node bin/driftmon.mjs collect --sessions 1 --only T,L,G,S`
+   （产物标 `partial`，不进基线/噪声底，只验证 key/网络/解析）
+3. 30 轮采集：`./scripts/phase0-calibrate.sh --rounds 30 --interval 60`
+   （可后台 `nohup`；断点续跑；日志在 `.local/phase0/`）
+4. 派生：`baseline build` → `baseline noise-floor --rounds 30` → 检查 `summary.verdict === "calibrated"`、
+   每个端点 `channels.T.distinctVectors === 1`、`unusableChannels` 是否合理
+5. 阈值 review：**人工**按 noise-floor 数值改 `judge.thresholds` / `gray.thresholds`，不要自动改配置
+6. 固化：`EVIDENCE.md` 记 E10、`ROADMAP.md` 勾 Phase 0、`CHANGELOG.md` 记录；重跑
+   `template check` / `judge run`，无漂移时应是 `stable`/`insufficient` 而非 `drift-*`
+
+## 7. 与插件仓库联动（可选）
 
 让插件展示 driftmon 的行为告警：在插件的 profile 配置里设置
 `externalAlertFile: ${WATCH_FILE}`（插件侧 `display-only`，文件缺失静默降级）。
 反向不做：driftmon 不写插件目录、不 import 插件代码。
 
-## 7. 定时化（需用户同意）
+## 8. 定时化（需用户同意）
 
 cron 示例（时间/路径按 `${SYMBOLS}` 展开后写入用户 crontab，不要提交真实路径）：
 
@@ -110,7 +126,7 @@ cron 示例（时间/路径按 `${SYMBOLS}` 展开后写入用户 crontab，不�
 
 systemd timer 同理（`ExecStart=/usr/bin/env bash -lc '…'`）。安装/修改计划任务前先问用户。
 
-## 8. 安全边界（硬约束，agent 不得违反）
+## 9. 安全边界（硬约束，agent 不得违反）
 
 1. **凭据**：只通过环境变量名引用；不读取、不打印、不写入、不提交任何 key。
 2. **数据**：不存 prompt / 响应正文；`${RAW_DIR}` append-only，不修改历史批次。
@@ -118,7 +134,7 @@ systemd timer 同理（`ExecStart=/usr/bin/env bash -lc '…'`）。安装/修�
 4. **本机字段**：只写符号或 `.local/symbols.env`；不要把绝对路径写进仓库文件/提交。
 5. **不替用户做判定结论**：Phase 0 标定前阈值只是默认值，报告要写明。
 
-## 9. 常见失败
+## 10. 常见失败
 
 | 现象 | 原因 | 处理 |
 | --- | --- | --- |

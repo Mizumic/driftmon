@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/Mizumic/driftmon/actions/workflows/ci.yml/badge.svg)](https://github.com/Mizumic/driftmon/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933.svg)](package.json)
-[![Tests](https://img.shields.io/badge/tests-64%20passing-brightgreen.svg)](#开发与测试)
+[![Tests](https://img.shields.io/badge/tests-71%20passing-brightgreen.svg)](#开发与测试)
 [![Phase](https://img.shields.io/badge/phase-0%2F1%20skeleton-orange.svg)](#当前状态与已知限制)
 
 **当前状态**：Phase 0/1 骨架已实现（采集 / 签名 / 基线 / 判定 / 报告 + 离线测试），
@@ -62,7 +62,7 @@
 ```bash
 git clone https://github.com/Mizumic/driftmon.git
 cd driftmon
-npm test                                  # 64 项离线测试，不联网
+npm test                                  # 71 项离线测试，不联网
 node bin/driftmon.mjs status              # 配置 / 探针组哈希 / 插件依赖 / 数据现状
 
 export OPENCODE_API_KEY=...               # key 只走环境变量，不写配置文件
@@ -70,6 +70,7 @@ node bin/driftmon.mjs collect --sessions 1 --only T,L,G,S   # 冒烟：partial �
 node bin/driftmon.mjs collect --sessions 8                  # 一轮巡检（≈4.7k token/会话）
 
 node bin/driftmon.mjs baseline build      # 滚动窗口 → data/baselines（按端点分组）
+node bin/driftmon.mjs baseline noise-floor  # Phase 0 噪声底 → data/baselines/noise-floor.json
 node bin/driftmon.mjs judge run           # 同端点内部比基线 → results/alerts
 node bin/driftmon.mjs report              # 人可读报告 → results/reports
 
@@ -169,6 +170,7 @@ driftmon/
 | --- | --- |
 | **让 DSH agent 安装/升级本仓库** | [`docs/AGENT-INSTALL.md`](docs/AGENT-INSTALL.md)（agent 流程：符号 → 验证 → 配置 → 工作流 → 回滚） |
 | **本机路径等字段怎么落地** | [`docs/SYMBOLS.md`](docs/SYMBOLS.md)（符号映射表；真实值放 `.local/symbols.env`，gitignored） |
+| **跑 Phase 0 噪声标定** | [`docs/PHASE0-PLAN.md`](docs/PHASE0-PLAN.md)（runbook：成本/时间、采集脚本、noise-floor、阈值 review） |
 | 决定要不要做、做成什么样 | [`docs/DESIGN.md`](docs/DESIGN.md) |
 | 动手改代码之前 | [`docs/PREREQUISITES.md`](docs/PREREQUISITES.md)（**必读**，全是实测结论和坑） |
 | **想知道文档里的数字是哪来的** | [`docs/EVIDENCE.md`](docs/EVIDENCE.md)（证据索引：脚本 / 产物 / 复现命令 / 可信度） |
@@ -202,7 +204,7 @@ driftmon/
 ## 开发与测试
 
 ```bash
-npm test                     # 64 项离线测试（node --test；桩 fetch，不联网）
+npm test                     # 71 项离线测试（node --test；桩 fetch，不联网）
 npm run status               # 等价于 node bin/driftmon.mjs status
 node bin/driftmon.mjs probe-set hash   # 查看冻结探针组哈希
 ```

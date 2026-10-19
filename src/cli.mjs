@@ -15,6 +15,7 @@ import {
   alertFileFor,
   baselineFileFor,
   ensureDirs,
+  noiseFloorFileFor,
   pathsOf,
   readAllRawBatches,
   readJsonFile,
@@ -27,6 +28,7 @@ import { estimateTokens, filterProbes, loadProbeSet, summarizeProbeSet } from '.
 import { loadPluginConfig, loadPluginDependency } from './plugin-dep.mjs'
 import { collect } from './collect.mjs'
 import { buildBaseline, channelNamesOf } from './baseline.mjs'
+import { buildNoiseFloor, noiseFloorSummary } from './noise-floor.mjs'
 import { judge } from './judge.mjs'
 import { renderReport, writeReport } from './report.mjs'
 import { buildCheckpointTemplate, templateSummary, validateTemplate } from './template.mjs'
@@ -41,6 +43,7 @@ const HELP = `driftmon ${VERSION} · 后端漂移监测（设计文档见 driftm
   driftmon probe-set hash
   driftmon collect [--sessions 8] [--only T,L] [--dry-run] [--provider P] [--model M]
   driftmon baseline build [--window 30] [--provider P] [--model M]
+  driftmon baseline noise-floor [--rounds 30] [--since <时间>] [--provider P] [--model M]
   driftmon judge run [--provider P] [--model M] [--json]
   driftmon report [--provider P] [--model M]
   driftmon template build --fingerprint <32hex> [--name <检查点名>] [--since <时间>]
@@ -52,6 +55,7 @@ const HELP = `driftmon ${VERSION} · 后端漂移监测（设计文档见 driftm
 
 说明：
   * collect 会真的花钱（默认 K=8 × 冻结探针组 ≈ 46k token/轮），--dry-run 只打印第一个请求；
+  * baseline noise-floor 汇总 Phase 0 标定窗口的自然波动（按端点/通道），写 data/baselines/noise-floor.json；
   * template build 用原始层里「指纹匹配」的完整批次固化某检查点的行为向量模板（不联网）；
   * template check 把最新窗口的批次对模板比较，写一份通用告警文件 results/watch/gray-watch.json；
   * 主动监测默认不随插件启动，需要显式跑这个 CLI（见 docs/DEPENDENCY.md 的分工）；
@@ -246,8 +250,35 @@ async function commandBaselineBuild (flags) {
   }
 }
 
-async function loadBaselineOrThrow ({ config, paths }, probeSetHash) {
-  const file = baselineFileFor(paths, config.provider.id, config.provider.model)
+async function commandNoiseFloor (flags) {
+  const { config, paths } = await contextOf(flags)
+  const { probeSet, probeSetHash } = await loadedProbes(paths)
+  const batches = await readAllRawBatches(paths)
+  const rounds = numberFlag(flags, 'rounds') ?? 30
+  const sessionsPerRound = config.collect.sessions ?? 8
+  const since = sinceFlag(flags)
+  const floor = buildNoiseFloor({
+    batches,
+    probes: probeSet.probes,
+    providerId: config.provider.id,
+    model: config.provider.model,
+    probeSetHash,
+    rounds,
+    sessionsPerRound,
+    since,
+  })
+  const file = flags.out !== undefined ? resolve(String(flags.out)) : noiseFloorFileFor(paths)
+  await ensureDirs(paths)
+  await writeJsonAtomic(file, floor)
+  console.log(`噪声底已写入：${file}`)
+  for (const line of noiseFloorSummary(floor)) console.log(line)
+  if (floor.summary.verdict !== 'calibrated') {
+    console.log(`⚠ 窗口不足：${floor.summary.message}；Phase 0 验收标准见 docs/ROADMAP.md`)
+  }
+  console.log(`下一步：按 docs/PHASE0-PLAN.md 第 4 步做阈值 review（不要直接自动改 config）`)
+}
+
+async function loadBaselineOrThrow ({ config, paths }, probeSetHash) {  const file = baselineFileFor(paths, config.provider.id, config.provider.model)
   const baseline = await readJsonFile(file, null)
   if (baseline === null) throw new Error(`没有基线：${file}；先跑 driftmon baseline build`)
   if (baseline.probeSetHash !== probeSetHash) {
@@ -435,6 +466,7 @@ export async function main (argv) {
     if (command === 'probe-set') return await commandProbeSetHash(flags).then(() => 0)
     if (command === 'collect') return await commandCollect(flags).then(() => 0)
     if (command === 'baseline' && subcommand === 'build') return await commandBaselineBuild(flags).then(() => 0)
+    if (command === 'baseline' && subcommand === 'noise-floor') return await commandNoiseFloor(flags).then(() => 0)
     if (command === 'judge' && (subcommand === 'run' || subcommand === undefined)) return await commandJudge(flags).then(() => 0)
     if (command === 'report') return await commandReport(flags).then(() => 0)
     if (command === 'template' && subcommand === 'build') return await commandTemplateBuild(flags).then(() => 0)

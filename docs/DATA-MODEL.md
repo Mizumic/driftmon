@@ -108,6 +108,44 @@
 
 **禁止**：把不同端点的样本混进同一个基线（会互相污染，且掩盖路由漂移）。
 
+### Phase 0 噪声底 `data/baselines/noise-floor.json`
+
+**性质**：`driftmon baseline noise-floor` 的派生产物（Phase 0 标定），只读原始层、可重建；
+**不改阈值**——阈值替换是人工 review 步骤（见 [`PHASE0-PLAN.md`](PHASE0-PLAN.md)）。
+
+```jsonc
+{
+  "formatVersion": 1,
+  "kind": "noise-floor",
+  "probeSetHash": "sha256:18c0…",
+  "provider": "deepseek-official", "model": "deepseek-flash",
+  "sessionsPerRound": 8,
+  "window": { "rounds": 30, "batches": 240, "samples": 8640, "from": …, "to": …, "requestedRounds": 30 },
+  "criteria": { "T": "…", "L": "…", "G": "…", "C": "…", "S": "…" },   // 每个通道的可用性判据（可解释）
+  "endpoints": {
+    "direct:deepseek-official": {
+      "batches": 240, "samples": 8640, "rounds": 30, "from": …, "to": …,
+      "channels": {
+        "T": { "distinctVectors": 1, "vectorsObserved": [{ "vector": [18,17,17,39,16], "batches": 240 }], "modeShare": 1, "usable": true },
+        "L": { "topKJaccard": { "p05": …, "p50": …, "p95": …, "p99": … }, "logprobMedian": 0, "probabilitiesDegenerate": true, "usable": true },
+        "G": { "failures": …, "tokens": …, "failRate": …, "ci95": [ … ], "ci95Width": …, "usable": true },
+        "C": { "hitRatio": { "p05": …, "p50": … }, "usable": true },
+        "S": { "ttftMs": { "p50": …, "p95": … }, "p95OverP50": …, "usable": true }
+      },
+      "usableChannels": ["T","L","G","C","S"],
+      "unusableChannels": {},           // 通道 → 不可用原因（噪声太大/信号缺失）
+      "unavailableChannels": []         // 该端点根本没有这类数据
+    }
+  },
+  "summary": { "judgementUsable": [...], "verdict": "calibrated|insufficient-window", "message": "…" },
+  "skipped": { "partial": 0, "otherProviderModel": 0, "otherProbeSet": 0, "missingEndpoint": 0, "beforeSince": 0 },
+  "caveats": ["…"]
+}
+```
+
+**不变量**：与基线相同——先按 `endpointId` 分组、禁止跨端点混池；`unusableChannels` 必须写明原因
+（允许结论是「这条通道不能用」）；`verdict` 为 `insufficient-window` 时不得用来调阈值。
+
 ---
 
 ## 派生参考：已知检查点模板层 `data/templates/`

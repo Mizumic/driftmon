@@ -13,7 +13,7 @@
 ```bash
 git clone https://github.com/Mizumic/driftmon.git
 cd driftmon
-npm test          # 64 项离线测试，不联网
+npm test          # 71 项离线测试，不联网
 node bin/driftmon.mjs status
 ```
 

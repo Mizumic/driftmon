@@ -17,6 +17,11 @@
 - **DSH agent 安装文档 + 本机符号映射**：新增 `docs/AGENT-INSTALL.md`（agent 安装/配置/验证/
   成本与安全边界）与 `docs/SYMBOLS.md`（`${DSH_HOME}`、`${WATCH_FILE}` 等本机字段的符号映射表，
   实际取值放 gitignored 的 `.local/symbols.env`）；主仓迁移为 GitHub。
+- **Phase 0 标定工具**（数据待采集）：新增 `baseline noise-floor` 命令——按端点/通道汇总
+  自然波动（T 唯一性、L top-k p50/p95、G 失败率+CI、C 命中率、S TTFT），逐通道标注可用性
+  并写 `data/baselines/noise-floor.json`；新增 `scripts/phase0-calibrate.sh`（30 轮、dry-run、
+  断点续跑、日志/状态在 `.local/phase0/`）、`docs/PHASE0-PLAN.md`（runbook：成本/时间、
+  阈值 review、验收映射）；测试 64 → **71 项**。
 
 ## [0.1.0] - 2026-10-20
 
@@ -39,7 +44,7 @@
   40 批 / 1440 样本 / 0 错误）。
 - **行为告警**：`src/gray.mjs` 对比模板 → `results/watch/gray-watch.json`
   （通用 schema v1，display-only，可被展示层读取）。
-- **离线测试** 64 项（`node --test`，桩 fetch，不联网）。
+- **离线测试** 71 项（`node --test`，桩 fetch，不联网）。
 
 ### Changed
 

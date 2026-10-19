@@ -126,6 +126,11 @@ export function watchFileFor (paths) {
   return join(paths.watch, 'gray-watch.json')
 }
 
+/** Phase 0 噪声底（派生层，可重建；schema 见 docs/DATA-MODEL.md 层③）。 */
+export function noiseFloorFileFor (paths) {
+  return join(paths.baselines, 'noise-floor.json')
+}
+
 export function templateFileFor (paths, checkpointNameOrFingerprint) {
   return join(paths.templates, `checkpoint-${safeName(checkpointNameOrFingerprint)}.json`)
 }

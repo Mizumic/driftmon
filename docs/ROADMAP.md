@@ -5,7 +5,7 @@
 ## 实现状态（2026-10-20）
 
 Phase 0/1 的**代码骨架已就绪**：`collect`（K 新会话 × 冻结探针组）、`signature`（五通道纯函数）、
-`baseline`（按端点分组 + 噪声底）、`judge`（五值状态机，可回放）、`report`，**64 项离线测试全过**
+`baseline`（按端点分组 + 噪声底）、`judge`（五值状态机，可回放）、`report`，**71 项离线测试全过**
 （含 `template` 已知检查点模板、`gray` 行为告警、官方直连端点归一化、插件 `config.json` 只读消费）。
 真实网关单会话冒烟已跑通（T/L/G/C/S 五组都有数据，批次标 `partial: true`）；
 官方端点已用 5 轮完整巡检固化 `flash 1017` 行为模板（40 批 / 1440 样本 / 0 错误，见
@@ -37,6 +37,12 @@ Phase 0/1 的**代码骨架已就绪**：`collect`（K 新会话 × 冻结探针
 * [ ] 采集脚本本身是**文件**（不是一次性内联命令），且能一键重跑出同一格式。
 
 **产出**：`data/raw/*.jsonl` + `data/baselines/noise-floor.json`
+
+**执行工具（2026-10-20 就绪，数据尚未采集）**：
+
+* 采集：`scripts/phase0-calibrate.sh`（30 轮、可 dry-run、可断点续跑，状态/日志写 `.local/phase0/`）；
+* 派生：`driftmon baseline noise-floor [--rounds 30]` → 按端点/通道的自然波动分布 + 可用性判定；
+* runbook：`docs/PHASE0-PLAN.md`（成本/时间、步骤、阈值 review、验收映射）。
 
 **"轮"的定义（全局统一，别处都按这个）**：**一轮巡检 = K≥8 个新会话，每个会话发一次完整探针组**。
 Phase 0 的"30 轮"= 30 轮巡检 = 240 次探针组 ≈ 1.4M token ≈ **$0.36**（详见 `PREREQUISITES.md §4`）。
