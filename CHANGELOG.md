@@ -17,6 +17,7 @@
 - **DSH agent 安装文档 + 本机符号映射**：新增 `docs/AGENT-INSTALL.md`（agent 安装/配置/验证/
   成本与安全边界）与 `docs/SYMBOLS.md`（`${DSH_HOME}`、`${WATCH_FILE}` 等本机字段的符号映射表，
   实际取值放 gitignored 的 `.local/symbols.env`）；主仓迁移为 GitHub。
+- **DSH 版本声明**：README 增加「DSH 版本声明」（driftmon 不依赖 DSH 版本，仅通过插件产物契约 v1 间接耦合；验证组合 DSH `0.2.0-rc.2` + 插件 `0.3.0`）；`docs/DEPENDENCY.md` 增加「DSH 版本耦合」一节，`docs/AGENT-INSTALL.md` 前置条件同步说明。
 - **文档澄清**：`docs/SYMBOLS.md` 最后一列明确标注「示例（占位，非本机值）」，`docs/symbols.example.env` 头部也强调全部是占位符（`docs/DEPENDENCY.md` 布局示例同步标注）——避免把示例路径误读为「本机映射被入库」。真实映射只在 gitignored 的 `.local/symbols.env`。
 - **Phase 0 标定工具**（数据待采集）：新增 `baseline noise-floor` 命令——按端点/通道汇总
   自然波动（T 唯一性、L top-k p50/p95、G 失败率+CI、C 命中率、S TTFT），逐通道标注可用性

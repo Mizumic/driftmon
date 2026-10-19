@@ -16,6 +16,7 @@
 | 仓库 | 已 clone 到 `${REPO_DIR}`，工作区干净 | `git -C "${REPO_DIR}" status --short` |
 | 网络 | 仅真实采集/模板重采需要；离线测试不需要 | — |
 | 凭据 | 只需**环境变量名**（配置项 `provider.apiKeyEnv`） | 询问用户用哪个端点/key |
+| DSH | **driftmon 本体不依赖 DSH 版本**；仅「插件联动」时需要插件与产物契约 v1 | `dsh --version`（仅诊断） |
 | 被动层插件（可选） | 装了才能读端点登记/检查点；不装也能跑 | 见插件仓库 `docs/AGENT-INSTALL.md` |
 
 > 变更范围：写 `${DRIFTMON_DIR}/config.json`（本机配置）与 `data/`、`results/`（产物）。

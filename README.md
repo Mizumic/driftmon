@@ -17,6 +17,7 @@
 
 - [为什么做这个](#为什么做这个)
 - [环境要求](#环境要求)
+- [DSH 版本声明](#dsh-版本声明)
 - [快速开始](#快速开始)
 - [配置](#配置)
 - [已知检查点模板](#已知检查点模板灰度检测的参考物)
@@ -51,6 +52,19 @@
 | Node.js | `>= 20` | 纯 Node 实现，**零运行时依赖**（只用内建模块） |
 | API key（采集时才需要） | 环境变量 | 例如 `OPENCODE_API_KEY` / `DEEPSEEK_API_KEY`；**只走环境变量，不写进配置文件** |
 | 被动层插件（可选） | [`dsh-system-fingerprint`](https://github.com/Mizumic/dsh-system-fingerprint) | 只读它的产物做交叉引用；不装也能采集/判定 |
+
+## DSH 版本声明
+
+driftmon **不依赖 DSH 版本**：它是独立 CLI（纯 Node、零运行时依赖），不 import DSH 代码，
+不装插件也能采集/判定。唯一与 DSH 生态的耦合是**插件产物契约**：
+
+| 项 | 声明 |
+| --- | --- |
+| 与 DSH 的关系 | 无代码/进程依赖；只在「联动展示」时只读 `dsh-system-fingerprint` 的 `endpoints.json` / `config.json`（schema v1） |
+| 当前验证组合 | **DSH `0.2.0-rc.2` + 插件 `0.3.0`**（2026-10-20） |
+| 契约不兼容时 | 缺失 / 损坏 / 版本不认识 → 只降级告警，不崩、不阻断采集与判定（见 [`docs/DEPENDENCY.md`](docs/DEPENDENCY.md)） |
+| DSH 升级后 | 先确认插件仍是 `0.3.x` 且产物契约仍是 v1；插件 bump 契约版本时，driftmon 需同步升级消费逻辑 |
+| Node 版本 | `>= 20`（不随 DSH 版本变化） |
 
 ## 快速开始
 

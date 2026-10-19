@@ -114,3 +114,19 @@ driftmon 找到插件产物目录的顺序：
 * 只读契约目前有两个版本化文件（`endpoints.json` v1 / `config.json` v1），插件代码零 driftmon 引用；
 * 插件的升级节奏跟 DSH 宿主走，driftmon 的升级节奏跟探针组/判定逻辑走，两者互不阻塞；
 * 探针组换版由 driftmon 自己管（`probeSetVersion` + 基线 `stale`），与插件完全无关。
+
+## 6. DSH 版本耦合
+
+driftmon **不依赖 DSH 版本**：它是独立 CLI（纯 Node、零运行时依赖），不 import DSH 代码、
+不要求 DSH 正在运行，也不装插件也能采集/判定。
+
+与 DSH 生态的耦合只有一条间接链路：**DSH 版本 → 插件版本 → 插件产物契约版本**。
+
+| 层 | 当前声明 |
+| --- | --- |
+| DSH | 已验证组合：DSH **`0.2.0-rc.2`** + 插件 `0.3.0`（2026-10-20）；DSH 升级本身不改变 driftmon 的用法 |
+| 插件 | 只读 `endpoints.json` v1（必需）与 `config.json` v1（可选） |
+| 契约 | 版本不认识 / 字段缺失 → 降级告警，不崩、不阻断采集（§2.1 / §2.2） |
+| 升级动作 | 插件 bump 契约版本时，driftmon 同步升级读取逻辑；仅换 DSH 版本而契约不变时，无需改 driftmon |
+
+详见插件仓库 README 的「DSH 版本兼容性声明」与 [`../README.md`](../README.md) 的「DSH 版本声明」。
