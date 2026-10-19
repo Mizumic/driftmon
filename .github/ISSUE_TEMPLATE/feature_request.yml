@@ -1,0 +1,39 @@
+name: 功能建议
+description: 提出新通道 / 新判定规则 / 新用法
+title: "[feature] "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先说明要解决的问题，而不是直接给实现方案。
+        注意本项目的硬约束：零运行时依赖、原始层 append-only、探针组冻结、证据先落盘。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 现在的观测/判定哪里不够用？在什么场景下遇到？
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 可选。若涉及新通道/新阈值，请说明如何离线验证（桩 fetch、不联网）
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: 约束确认
+      options:
+        - label: 方案不引入第三方运行时依赖
+        - label: 方案不修改原始层历史（append-only），派生层可重算
+        - label: 方案不存 prompt / 响应正文，不记录 API key
+        - label: 若改探针组，方案包含 `probeSetVersion` bump 与重建说明

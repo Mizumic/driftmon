@@ -1,0 +1,57 @@
+{
+  "$comment": "复制为 driftmon/config.json 后按需修改；config.json 不进版本库（见 .gitignore）。key 永远走环境变量名，不写进这个文件。",
+  "paths": {
+    "data": "data",
+    "results": "results",
+    "probes": "probes"
+  },
+  "plugin": {
+    "$comment": "dsh-system-fingerprint 的存储目录 = DSH_HOME/storages/system-fingerprint。留空则依次用 DSH_HOME 环境变量、<workspace>/home。",
+    "dshHome": null,
+    "storageSubdir": "storages/system-fingerprint"
+  },
+  "provider": {
+    "id": "opencode-go",
+    "api": "openai-completions",
+    "baseURL": "https://opencode.ai/inference/go/v1",
+    "model": "deepseek-v4.1-flash",
+    "apiKeyEnv": "OPENCODE_API_KEY",
+    "sessionHeader": "x-opencode-session",
+    "headers": {
+      "user-agent": "deepseek-harness/0.2.0-rc.2 (+https://github.com/deepseek-ai/deepseek-harness)"
+    },
+    "timeoutMs": 30000,
+    "retries": 1
+  },
+  "collect": {
+    "sessions": 8,
+    "betweenProbesMs": 0,
+    "sessionPrefix": "drift"
+  },
+  "baseline": {
+    "windowBatches": 30
+  },
+  "judge": {
+    "nMin": 30,
+    "windowBatches": 30,
+    "thresholds": {
+      "lMaxTopKJaccardDrop": 0.05,
+      "lLogprobIqrZ": 2,
+      "gZScore": 2,
+      "cHitRatioDrop": 0.2,
+      "sTtftRatio": 1.5
+    },
+    "minIndependentChannels": 2,
+    "confirmRounds": 2
+  },
+  "gray": {
+    "thresholds": {
+      "gFailRateDelta": 0.2,
+      "gPerTokenFlipMinRounds": 8,
+      "lTopKJaccardDrop": 0.08,
+      "cHitRatioDrop": 0.2,
+      "sTtftRatio": 1.8,
+      "minBatches": 2
+    }
+  }
+}

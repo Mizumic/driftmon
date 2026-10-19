@@ -1,0 +1,36 @@
+# glitch token 探针组 · 原始输出转录
+# 来源：会话日志（后台 job bash-248）
+# 脚本：.scratch/fp-gateway/glitch-battery.py
+# 采集：2026-10-17 16:13:10 – 16:22:55（本地）
+# 压缩说明：每轮打印一行（端点 + 失败数 + 失败清单），末段打印完整对比表；此处按原文保留。
+# token 清单：LessWrong《Anomalous Tokens in DeepSeek-V3 and r1》实测目录节选，共 14 个
+
+[16:13:10] 第 1 轮 端点=manhattan-project 复述失败 11/14: ['SetSavedPoint', 'Nameeee', 'EDMFunc', 'everydaycalculation', 'numbersaplenty', 'MANCHANTABILITY', 'ruptedException', 'reeNode', 'armaceut', '_POSTSUPERSCRIPT', 'talagsaon']
+[16:14:55] 第 2 轮 端点=manhattan-project 复述失败 8/14: ['SetSavedPoint', 'Nameeee', 'everydaycalculation', 'CategoryTreeLabel', 'eWriter', 'reeNode', 'armaceut', '_POSTSUPERSCRIPT']
+[16:16:41] 第 3 轮 端点=manhattan-project 复述失败 12/14: ['SetSavedPoint', 'Nameeee', 'EDMFunc', 'everydaycalculation', 'CategoryTreeLabel', 'MANCHANTABILITY', 'eWriter', 'reeNode', 'armaceut', '_POSTSUPERSCRIPT', 'Kahenera', 'talagsaon']
+[16:19:00] 第 4 轮 端点=manhattan-project 复述失败 11/14: ['SetSavedPoint', 'Nameeee', 'everydaycalculation', 'numbersaplenty', 'MANCHANTABILITY', 'ruptedException', 'eWriter', 'reeNode', 'armaceut', '_POSTSUPERSCRIPT', 'talagsaon']
+[16:21:09] 第 5 轮 端点=orcarouter-dsv4.1flash 复述失败 11/14: ['SetSavedPoint', 'Nameeee', 'everydaycalculation', 'numbersaplenty', 'CategoryTreeLabel', 'MANCHANTABILITY', 'ruptedException', 'reeNode', 'armaceut', '_POSTSUPERSCRIPT', 'talagsaon']
+[16:22:55] 第 6 轮 端点=orcarouter-dsv4.1flash 复述失败 12/14: ['SetSavedPoint', 'Nameeee', 'everydaycalculation', 'numbersaplenty', 'CategoryTreeLabel', 'MANCHANTABILITY', 'ruptedException', 'eWriter', 'reeNode', 'armaceut', '_POSTSUPERSCRIPT', 'talagsaon']
+
+=== 失败向量对比（True=复述成功，False=失败）===
+token                  manhattan-project       orcarouter-dsv4.1flash
+SetSavedPoint                [False, False]          [False, False]
+Nameeee                [False, False]          [False, False]
+EDMFunc                [False, True]           [True, True]
+everydaycalculation    [False, False]          [False, False]
+numbersaplenty         [False, True]           [False, False]
+CategoryTreeLabel      [True, False]           [False, False]
+MANCHANTABILITY        [False, True]           [False, False]
+ruptedException        [False, True]           [False, False]
+eWriter                [True, False]           [True, False]
+reeNode                [False, False]          [False, False]
+armaceut               [False, False]          [False, False]
+_POSTSUPERSCRIPT       [False, False]          [False, False]
+Kahenera                 [True, True]            [True, True]
+talagsaon              [False, True]           [False, False]
+
+判定：两端点失败率接近（≈11–12/14），**集合高度重叠但差异落在端点内波动范围内** → 不能区分这两条链路。
+      同端点两轮之间失败集合本身也在变（manhattan 4 轮：11/8/12/11）。
+
+# ★ 这条证据的地位：是"行为侧"最像指纹的通道，但噪声大，只能比多轮失败率。
+# ★ 待复核：Phase 0 需要 ≥5 轮把失败率的标准误压下来，才能判断跨端点差异是否显著。

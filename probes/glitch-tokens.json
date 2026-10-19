@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "source": "https://www.lesswrong.com/posts/xtpcJjfWhn3Xn8Pu5/anomalous-tokens-in-deepseek-v3-and-r1",
+  "recoveredFrom": "driftmon/data/raw/2026-10-17-transcripts/glitch-battery.txt",
+  "status": "transcript-only",
+  "caveat": "从终端转录恢复的写法；部分原始 token 含不可见 Unicode 片段（如零宽字符），转录时可能丢失。Phase 0 前应从 tokenizer 词表逐字节复核。",
+  "tokens": [
+    "SetSavedPoint",
+    "Nameeee",
+    "EDMFunc",
+    "everydaycalculation",
+    "numbersaplenty",
+    "CategoryTreeLabel",
+    "MANCHANTABILITY",
+    "ruptedException",
+    "eWriter",
+    "reeNode",
+    "armaceut",
+    "_POSTSUPERSCRIPT",
+    "Kahenera",
+    "talagsaon"
+  ]
+}

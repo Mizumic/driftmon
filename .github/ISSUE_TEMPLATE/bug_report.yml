@@ -1,0 +1,69 @@
+name: Bug 报告
+description: 报告可复现的问题（安全漏洞请走 SECURITY.md，不要开公开 issue）
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。提交前请移除日志里的 API key、session id、prompt、响应正文等敏感信息。
+        如果是「判定不符合预期」，请先确认 `docs/EVIDENCE.md` 与 `docs/ROADMAP.md` 里
+        关于 Phase 0 未标定的说明——默认阈值不应被当作对外结论。
+
+  - type: input
+    id: version
+    attributes:
+      label: driftmon 版本
+      description: package.json 的 version，或 `node bin/driftmon.mjs status` 的输出
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: 运行环境
+      description: Node 版本、操作系统、采集端点类型（官方 / 网关）
+      placeholder: "Node 22 / Linux / api.deepseek.com"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 现象
+      description: 实际看到了什么？（CLI 输出 / 产物文件 / 判定结果）
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      description: 尽量给出最小命令；涉及采集时说明 `--sessions` / `--only` 等参数
+      placeholder: |
+        1. node bin/driftmon.mjs ...
+        2. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: data
+    attributes:
+      label: 相关产物（已脱敏）
+      description: 例如 status 输出、`results/alerts/*.json` 片段；不要贴 prompt 或响应正文
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 隐私确认
+      options:
+        - label: 我已移除日志/截图中的 API key、prompt、模型回复正文等敏感信息
+          required: true

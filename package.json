@@ -1,0 +1,35 @@
+{
+  "name": "driftmon",
+  "version": "0.1.0",
+  "description": "后端漂移监测：不依赖供应商声明，用固定探针组观测「我调用的模型后端有没有变」。被动观测数据来自 dsh-system-fingerprint（只读依赖，不做代码耦合）。",
+  "type": "module",
+  "bin": {
+    "driftmon": "./bin/driftmon.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "status": "node bin/driftmon.mjs status",
+    "hash": "node bin/driftmon.mjs probe-set hash"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mizumic/driftmon.git"
+  },
+  "homepage": "https://github.com/Mizumic/driftmon#readme",
+  "bugs": {
+    "url": "https://github.com/Mizumic/driftmon/issues"
+  },
+  "keywords": [
+    "drift-monitoring",
+    "model-backend",
+    "system-fingerprint",
+    "probe",
+    "baseline",
+    "llm",
+    "deepseek-harness"
+  ]
+}

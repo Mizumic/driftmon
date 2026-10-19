@@ -1,0 +1,7 @@
+# 依赖更新：本项目零运行时依赖，只跟踪 GitHub Actions 版本。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

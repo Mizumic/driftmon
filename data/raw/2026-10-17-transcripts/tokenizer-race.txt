@@ -1,0 +1,32 @@
+# tokenizer 计数差分 · 原始输出转录
+# 来源：会话日志（后台 job bash-245）
+# 脚本：.scratch/fp-gateway/tokenizer-race.py
+# 采集：2026-10-17 16:09:39 – 16:25:14（本地）
+# 压缩说明：脚本原本每轮打印一行进度、末段打印每个探针的全部数值列表；
+#           此处保留末段结构，并把长列表压成 "×N 次全为 X"（数值本身同质）。
+
+# 探针文本（来自脚本 PROBES 常量，逐字节固定）
+#   纯ASCII          = "The quick brown fox jumps over the lazy dog 0123456789"
+#   中文             = "复述这段话：今天天气不错，我们一起去看电影吧。"
+#   生僻片段          = "复述：SetSavedPoint ‍‍" + U+200D + " " + U+2581 ×3
+#   特殊token字面     = "复述：" + **3 个** DeepSeek 特殊 token 字面（即 3 组 <｜…｜>，共 6 个全角竖线）
+#   空白与Unicode     = "a" + U+00A0 + "b" + U+200B + "c\td\ne   f" + U+3000 + "g"
+
+# 请求形态：model=deepseek-v4.1-flash, max_tokens=1, temperature 默认, 每 20s 一轮
+
+=== 结果：同一段文本在两个上游端点的 prompt_tokens ===
+  纯ASCII        manhattan-project=[44, 44]   orcarouter-dsv4.1flash=[44 ×31 次全为 44]
+  中文            manhattan-project=[43, 43]   orcarouter-dsv4.1flash=[43 ×31 次全为 43]
+  生僻片段          manhattan-project=[43, 43]   orcarouter-dsv4.1flash=[43 ×31 次全为 43]
+  特殊token字面     manhattan-project=[36, 36]   orcarouter-dsv4.1flash=[64 ×31 次全为 64]
+  空白与Unicode     manhattan-project=[42, 42]   orcarouter-dsv4.1flash=[42 ×31 次全为 42]
+
+=== 判定 ===
+  特殊token字面: 计数不同 → {'manhattan-project': [36], 'orcarouter-dsv4.1flash': [64]}
+
+# 停止条件：两个端点各 >=2 样本（本轮 manhattan 由另一个会话抽中，随后本脚本等到它）
+# 观测到的端点：manhattan-project、orcarouter-dsv4.1flash
+# 未观测到：luminal-dsv4.1flash（当时尚未发现该端点）
+
+# ★ 这条证据的地位：driftmon 里唯一"单次测量即确定"的通道（纯计费口径，无采样噪声）。
+# ★ 待复核：只在一个时间窗内采过，Phase 0 需重跑确认 36/64 的稳定性。

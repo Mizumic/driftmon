@@ -1,0 +1,39 @@
+# logprob 签名竞速 · 原始输出转录
+# 来源：会话日志（后台 job bash-247）
+# 脚本：.scratch/fp-gateway/logprob-race.py
+# 采集：2026-10-17 16:10:30 – 16:50:16（本地，共 89 轮）
+# 压缩说明：共 89 轮、每轮打印 1 行 + 末段打印全部样本；此处保留首尾若干轮原文，
+#           中间用省略号跳过（跳过部分均为同构的单行记录）。
+
+# 固定 prompt = "Repeat exactly, no explanation: The capital of France is"
+# 请求形态：model=deepseek-v4.1-flash, max_tokens=6, temperature=0, logprobs=true, top_logprobs=5
+
+[16:10:30] 第 1 轮 端点=orcarouter-dsv4.1flash tokens=['We', ' need', ' answer', ' exactly', ' repeat', ' no'] lp=[-0.000159, -3e-06, -1.2e-05, -0.429718, -1.234047, -0.019504]
+[16:10:57] 第 2 轮 端点=orcarouter-dsv4.1flash tokens=['We', ' need', ' answer', ' exactly', ' no', ' explanation'] lp=[-0.001507, -1e-06, -3e-05, -0.252915, -1.276692, 0]
+[16:11:24] 第 3 轮 端点=orcarouter-dsv4.1flash tokens=['We', ' need', ' answer', ' repeat', ' exactly', ' no'] lp=[-8.6e-05, -1e-06, -3.8e-05, -3.808714, -0.0, -0.161889]
+[16:12:18] 第 5 轮 端点=orcarouter-dsv4.1flash tokens=['We', ' need', ' answer', ' exactly', ' no', ' explanation'] lp=[-4.6e-05, -4e-06, -2.7e-05, -0.245196, -0.473493, 0]
+[16:12:44] 第 6 轮 端点=orcarouter-dsv4.1flash tokens=['We', ' need', ' answer', ' exactly', ' no', ' explanation'] lp=[-4.6e-05, -4e-06, -2.7e-05, -0.245196, -0.473493, 0]
+[16:13:11] 第 7 轮 端点=orcarouter-dsv4.1flash tokens=['We', ' need', ' answer', ' exact', ' repeat', ' no'] lp=[-4.6e-05, -4e-06, -2.7e-05, -1.995196, -0.119453, -0.198667]
+        …（第 8–88 轮省略，形态同上：全部 端点=orcarouter-dsv4.1flash）…
+[16:39:21] 第 65 轮 端点=HTTP400 tokens=None lp=None                     ← 单次 400，脚本继续
+[16:50:16] 第 89 轮 端点=orcarouter-dsv4.1flash tokens=[…, ' exactly', ' no', ' explanation'] lp=[-0.000262, -4e-06, -2.6e-05, -0.267437, -0.706004, 0]
+
+=== 两个关键观察（原文）===
+# 观察 1：同一 prompt、temperature=0，token 序列每轮都在变
+#   出现的序列至少有：
+#     We need answer exactly repeat no
+#     We need answer exactly no explanation
+#     We need answer exact repeat no
+#     We need answer exactly , no
+#     We need answer exactly . User
+#     We need answer user asks "
+# 观察 2：同一个 token 序列会配上不同的 logprob 数值（同一序列、两次不同数值）
+#   tokens = We need answer exactly no explanation
+#     一次 lp = [-4.6e-05, -4e-06, -2.7e-05, -0.245196, -0.473493, 0]
+#     另一次 lp = [-0.000383, -1e-06, -1e-05, -0.185911, -1.218494, 0]
+
+判定：89 轮中 87 轮落在 orcarouter-dsv4.1flash（另 2 轮为 HTTP400：第 16、65 轮），**没有等到端点翻转**（该会话被粘在这个端点上约 40 分钟）；
+      同时证明 temperature=0 不构成确定性，logprob 通道只能做统计比较。
+
+# ★ 这条证据同时是"路由按会话绑定"的旁证：单会话 40 分钟一次没换端点。
+# ★ 待复核：Phase 0 需在同一端点上重复本实验，量化 top-k 集合重合度的自然波动（噪声底）。

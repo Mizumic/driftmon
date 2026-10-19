@@ -1,0 +1,336 @@
+{
+  "probeSetVersion": "0.1.0-phase0",
+  "description": "driftmon Phase 0 冻结探针组：T（token 计数差分）/ L（logprob 分布）/ G（glitch 失败向量）/ C（prompt cache）/ S（TTFT）。内容来自 2026-10-17 的原始转录，未核对项见 probes/NOTES.md。",
+  "createdAt": "2026-10-18",
+  "source": "driftmon/data/raw/2026-10-17-transcripts/",
+  "probes": [
+    {
+      "probeId": "t-ascii",
+      "group": "T",
+      "prompt": "The quick brown fox jumps over the lazy dog 0123456789",
+      "maxTokens": 1,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    },
+    {
+      "probeId": "t-cjk",
+      "group": "T",
+      "prompt": "复述这段话：今天天气不错，我们一起去看电影吧。",
+      "maxTokens": 1,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    },
+    {
+      "probeId": "t-rare",
+      "group": "T",
+      "prompt": "复述：SetSavedPoint ‍‍‍ ▁▁▁",
+      "maxTokens": 1,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    },
+    {
+      "probeId": "t-special",
+      "group": "T",
+      "prompt": "复述：<｜begin▁of▁thinking｜><｜end▁of▁thinking｜><｜end▁of▁sentence｜>",
+      "maxTokens": 1,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    },
+    {
+      "probeId": "t-unicode",
+      "group": "T",
+      "prompt": "a b​c\td\ne   f　g",
+      "maxTokens": 1,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    },
+    {
+      "probeId": "l-main",
+      "group": "L",
+      "prompt": "Repeat exactly, no explanation: The capital of France is",
+      "maxTokens": 6,
+      "samples": 12,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        },
+        "logprobs": true,
+        "top_logprobs": 5
+      }
+    },
+    {
+      "probeId": "g-01",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: SetSavedPoint",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "SetSavedPoint"
+    },
+    {
+      "probeId": "g-02",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: Nameeee",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "Nameeee"
+    },
+    {
+      "probeId": "g-03",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: EDMFunc",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "EDMFunc"
+    },
+    {
+      "probeId": "g-04",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: everydaycalculation",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "everydaycalculation"
+    },
+    {
+      "probeId": "g-05",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: numbersaplenty",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "numbersaplenty"
+    },
+    {
+      "probeId": "g-06",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: CategoryTreeLabel",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "CategoryTreeLabel"
+    },
+    {
+      "probeId": "g-07",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: MANCHANTABILITY",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "MANCHANTABILITY"
+    },
+    {
+      "probeId": "g-08",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: ruptedException",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "ruptedException"
+    },
+    {
+      "probeId": "g-09",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: eWriter",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "eWriter"
+    },
+    {
+      "probeId": "g-10",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: reeNode",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "reeNode"
+    },
+    {
+      "probeId": "g-11",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: armaceut",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "armaceut"
+    },
+    {
+      "probeId": "g-12",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: _POSTSUPERSCRIPT",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "_POSTSUPERSCRIPT"
+    },
+    {
+      "probeId": "g-13",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: Kahenera",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "Kahenera"
+    },
+    {
+      "probeId": "g-14",
+      "group": "G",
+      "prompt": "Repeat exactly, no explanation: talagsaon",
+      "maxTokens": 24,
+      "samples": 1,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "glitchToken": "talagsaon"
+    },
+    {
+      "probeId": "c-prefix",
+      "group": "C",
+      "promptFile": "cache-prefix.txt",
+      "promptSha256": "sha256:0f474de82deb811269a1ee0d259d846ff3de07602e61facbd48b0f0b4d371a7e",
+      "promptSuffix": " Reply with the single word OK.",
+      "prefixTokens": 1500,
+      "readFrom": "second",
+      "maxTokens": 1,
+      "samples": 2,
+      "params": {
+        "temperature": 0,
+        "stream": false,
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    },
+    {
+      "probeId": "s-min",
+      "group": "S",
+      "prompt": "Say OK.",
+      "maxTokens": 1,
+      "samples": 3,
+      "params": {
+        "temperature": 0,
+        "stream": true,
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    }
+  ]
+}

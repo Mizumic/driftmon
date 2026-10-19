@@ -1,0 +1,373 @@
+{
+  "version": 1,
+  "kind": "known-checkpoint-template",
+  "generatedAt": 1792436258759,
+  "note": "已知检查点的行为签名参考（派生层，可从 data/raw 重建）；指纹来自官方 system_fingerprint。",
+  "probeSet": {
+    "version": "0.1.0-phase0",
+    "hash": "sha256:18c0a4ed381cc177df3e9a1fda64fd9b86b3c581cd645179fc02a0fe1a4ba5a7"
+  },
+  "checkpoint": {
+    "name": "flash 1017",
+    "fingerprint": "e72d3c7f663d3e1383b00b3884cb4501",
+    "source": "system_fingerprint"
+  },
+  "provider": {
+    "id": "deepseek-official",
+    "baseURL": "https://api.deepseek.com",
+    "model": "deepseek-flash"
+  },
+  "window": {
+    "batches": 40,
+    "sessions": 40,
+    "samples": 1440,
+    "fingerprintSamples": 1320,
+    "errors": 0,
+    "from": 1792435163959,
+    "to": 1792436192298
+  },
+  "availability": {
+    "T": true,
+    "L": true,
+    "G": true,
+    "C": true,
+    "S": true
+  },
+  "channels": {
+    "T": {
+      "available": true,
+      "vector": [
+        18,
+        17,
+        17,
+        39,
+        16
+      ],
+      "hash": "sha256:00238634dacefa1a4d94841c4aea6658af2b60f8e49e5d54838da1a5bf30dd44",
+      "batches": 40,
+      "identicalAcrossBatches": true
+    },
+    "L": {
+      "available": true,
+      "batches": 40,
+      "topKJaccardMedian": 0.8187830687830688,
+      "topKJaccardRange": [
+        0.7857142857142857,
+        1
+      ],
+      "distinctTokenSequences": 1,
+      "logprobMedian": 0,
+      "probabilitiesDegenerate": true,
+      "note": "该端点把 logprob 数值上报为 0（概率数值不可用），但 top-k token 集合仍反映分布排序，仍可做灰度对比"
+    },
+    "G": {
+      "available": true,
+      "batches": 40,
+      "roundsPerBatch": 1,
+      "failRateMedian": 0.21428571428571427,
+      "failRateRange": [
+        0.21428571428571427,
+        0.21428571428571427
+      ],
+      "identicalFailSets": true,
+      "failsPerBatch": [
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ],
+        [
+          "g-05",
+          "g-06",
+          "g-11"
+        ]
+      ],
+      "perToken": {
+        "SetSavedPoint": {
+          "rounds": 40,
+          "successRate": 1
+        },
+        "Nameeee": {
+          "rounds": 40,
+          "successRate": 1
+        },
+        "EDMFunc": {
+          "rounds": 40,
+          "successRate": 1
+        },
+        "everydaycalculation": {
+          "rounds": 40,
+          "successRate": 1
+        },
+        "numbersaplenty": {
+          "rounds": 40,
+          "successRate": 0
+        },
+        "CategoryTreeLabel": {
+          "rounds": 40,
+          "successRate": 0
+        },
+        "MANCHANTABILITY": {
+          "rounds": 40,
+          "successRate": 1
+        },
+        "ruptedException": {
+          "rounds": 40,
+          "successRate": 1
+        },
+        "eWriter": {
+          "rounds": 40,
+          "successRate": 1
+        },
+        "reeNode": {
+          "rounds": 40,
+          "successRate": 1
+        },
+        "armaceut": {
+          "rounds": 40,
+          "successRate": 0
+        },
+        "_POSTSUPERSCRIPT": {
+          "rounds": 40,
+          "successRate": 1
+        },
+        "Kahenera": {
+          "rounds": 40,
+          "successRate": 1
+        },
+        "talagsaon": {
+          "rounds": 40,
+          "successRate": 1
+        }
+      },
+      "note": null
+    },
+    "C": {
+      "available": true,
+      "batches": 40,
+      "prefixTokens": 1584,
+      "hitRatioMedian": 0.8888888888888888,
+      "hitRatioRange": [
+        0.8888888888888888,
+        0.8888888888888888
+      ],
+      "note": "cache 命中率对服务栈/前缀模板敏感；掉下来不一定是模型变了"
+    },
+    "S": {
+      "available": true,
+      "batches": 40,
+      "ttftMedian": 117,
+      "ttftRangeMs": [
+        105,
+        179
+      ],
+      "samplesPerBatch": 3,
+      "note": "TTFT 是服务栈/负载信号，不是模型信号；只作辅助佐证"
+    }
+  },
+  "interpretation": {
+    "fingerprintChannel": "system_fingerprint",
+    "behaviorChannels": [
+      "L",
+      "G"
+    ],
+    "configChannels": [
+      "T",
+      "C"
+    ],
+    "infraChannels": [
+      "S"
+    ],
+    "note": "指纹变了 = 官方配置变更（直接可见）；指纹不变但 behaviorChannels 分布偏移/双峰 = 疑似灰度。"
+  }
+}

@@ -1,0 +1,55 @@
+# 端点命名体系扫描 · 原始输出转录
+# 来源：会话日志（一次性内联脚本，无独立脚本文件）
+# 采集：2026-10-17 约 16:45（/models 返回 37 个模型，逐模型 1 次 max_tokens=1 请求）
+# 压缩说明：原文为逐模型一行；此处保留全部行，仅把 "HTTP 400/403" 的失败原因压成备注。
+
+模型                             endpoint-id                  上游串                                     备注
+deepseek-v4.1-flash            orcarouter-dsv4.1flash       deepseek/deepseek-v4.1-flash
+deepseek-v4-pro                deepseek                     deepseek-v4-pro
+glm-5.1                        fireworks                    accounts/fireworks/models/glm-5p3
+glm-5.2                        fireworks                    accounts/fireworks/models/glm-5p3
+glm-5.3                        fireworks                    accounts/fireworks/models/glm-5p3
+grok-4.6                        HTTP 400                     —                                           ModelPro…（错误体）
+grok-4.7                        HTTP 400                     —
+muse-spark-1.2-contributor     HTTP 403                     —                                           区域限制
+muse-spark-1.3-contributor     HTTP 403                     —                                           区域限制
+glm-5.3-flash                  relace-glm5.3flash           z-ai/glm-5.3-flash                         ← 后来轮转到 perplexity-glm5.3flash
+omen-alpha                     zai                          glm-5.3-flash                               ← 后来轮转到 perplexity-glm5.3flash
+gpt-5.6-luna                   HTTP 400                     —
+gpt-6-luna                     HTTP 400                     —
+claude-haiku-5-5               HTTP 400                     —
+hy3                            openrouter-novita            tencent/hy3
+hy4-preview                    openrouter-tencent           tencent/hy4-preview
+kimi-k2.6                      openrouter-moonshotai        moonshotai/kimi-k2.6
+kimi-k2.7-code                 moonshot                     kimi-k2.7-code
+kimi-k3                        thesean                      ship-like/kimi-k3
+mimo-v2.5                      openrouter-xiaomi            xiaomi/mimo-v2.5
+mimo-v2.6-flash                mimo                         mimo-v2.6-flash
+mimo-v2.5-pro                  mimo                         mimo-v2.5-pro
+mimo-v2.6-pro                  mimo                         mimo-v2.6-pro
+minimax-m2.5                   openrouter-minimax            minimax/minimax-m2.7
+minimax-m2.7                   HTTP 400                     —
+gemini-4-argon-contributor     HTTP 400                     —                                           server_error
+minimax-m3                     minimax.oai                  MiniMax-M3
+space-bunny                    space-bunny.oai              space-bunny
+longcat-2.0                    longcat                      LongCat-2.0
+longcat-2.5-preview-free       longcat-go-promo             LongCat-2.5-Preview
+step-5-preview                 stepfun                      step-5-preview
+beam-free                      HTTP 403                     —                                           区域限制
+qwen3.6-plus                   alibaba-us                   qwen3.6-plus
+qwen3.7-max                    alibaba-us                   qwen3.7-max
+qwen3.8-max                    alibaba-us                   qwen3.8-max
+qwen3.8-flash                  alibaba-us                   qwen3.8-flash
+qwen3.7-plus                   alibaba-us                   qwen3.7-plus
+
+=== 命名规律归纳（由本表得出）===
+  vendor 直连      deepseek / fireworks / alibaba-us / mimo / longcat / stepfun / moonshot / zai
+  经第三方路由器    openrouter-<vendor> ×5、orcarouter-dsv4.1flash、relace-glm5.3flash、perplexity-glm5.3flash
+  协议后缀          minimax.oai、space-bunny.oai（.oai = OpenAI 兼容面）
+  促销专用          longcat-go-promo
+  第三方推理端点    thesean（Thesean AI 的 Ship）
+  查不到公开身份    manhattan-project（唯一异类）
+
+# ★ 注意：本表是单次快照。后来确认同一模型的上游会轮转
+#   （glm-5.3-flash: relace → perplexity；omen-alpha: zai → perplexity），
+#   所以"端点 → 模型"的映射必须持续记录，不能查一次就当成定论。

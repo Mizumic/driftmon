@@ -1,0 +1,57 @@
+The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. A fixed prefix must be byte-identical on every probe run, otherwise the cache channel is meaningless. Backend configuration drift can be observed with usage counters, tokenizer counts, and probability arrays.
+
+Observation is not assertion: a changed measurement does not identify what the model became. Never store prompts or response bodies in the observation layer; store only numeric summaries. Routing is bound to a session; a single session only ever reveals one upstream endpoint.
+
+Sample the same frozen probe set from many fresh sessions, then group every sample by endpoint id. Noise floor calibration comes before judgement; without it any difference will look like drift. A verdict must carry the baseline version, the probe set hash, the time window, and the thresholds.
+
+Raw observations are append-only, derived signatures are recomputable, and verdicts must be traceable. The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. A fixed prefix must be byte-identical on every probe run, otherwise the cache channel is meaningless.
+
+Backend configuration drift can be observed with usage counters, tokenizer counts, and probability arrays. Observation is not assertion: a changed measurement does not identify what the model became. Never store prompts or response bodies in the observation layer; store only numeric summaries.
+
+Routing is bound to a session; a single session only ever reveals one upstream endpoint. Sample the same frozen probe set from many fresh sessions, then group every sample by endpoint id. Noise floor calibration comes before judgement; without it any difference will look like drift.
+
+A verdict must carry the baseline version, the probe set hash, the time window, and the thresholds. Raw observations are append-only, derived signatures are recomputable, and verdicts must be traceable. The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.
+
+A fixed prefix must be byte-identical on every probe run, otherwise the cache channel is meaningless. Backend configuration drift can be observed with usage counters, tokenizer counts, and probability arrays. Observation is not assertion: a changed measurement does not identify what the model became.
+
+Never store prompts or response bodies in the observation layer; store only numeric summaries. Routing is bound to a session; a single session only ever reveals one upstream endpoint. Sample the same frozen probe set from many fresh sessions, then group every sample by endpoint id.
+
+Noise floor calibration comes before judgement; without it any difference will look like drift. A verdict must carry the baseline version, the probe set hash, the time window, and the thresholds. Raw observations are append-only, derived signatures are recomputable, and verdicts must be traceable.
+
+The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. A fixed prefix must be byte-identical on every probe run, otherwise the cache channel is meaningless. Backend configuration drift can be observed with usage counters, tokenizer counts, and probability arrays.
+
+Observation is not assertion: a changed measurement does not identify what the model became. Never store prompts or response bodies in the observation layer; store only numeric summaries. Routing is bound to a session; a single session only ever reveals one upstream endpoint.
+
+Sample the same frozen probe set from many fresh sessions, then group every sample by endpoint id. Noise floor calibration comes before judgement; without it any difference will look like drift. A verdict must carry the baseline version, the probe set hash, the time window, and the thresholds.
+
+Raw observations are append-only, derived signatures are recomputable, and verdicts must be traceable. The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. A fixed prefix must be byte-identical on every probe run, otherwise the cache channel is meaningless.
+
+Backend configuration drift can be observed with usage counters, tokenizer counts, and probability arrays. Observation is not assertion: a changed measurement does not identify what the model became. Never store prompts or response bodies in the observation layer; store only numeric summaries.
+
+Routing is bound to a session; a single session only ever reveals one upstream endpoint. Sample the same frozen probe set from many fresh sessions, then group every sample by endpoint id. Noise floor calibration comes before judgement; without it any difference will look like drift.
+
+A verdict must carry the baseline version, the probe set hash, the time window, and the thresholds. Raw observations are append-only, derived signatures are recomputable, and verdicts must be traceable. The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.
+
+A fixed prefix must be byte-identical on every probe run, otherwise the cache channel is meaningless. Backend configuration drift can be observed with usage counters, tokenizer counts, and probability arrays. Observation is not assertion: a changed measurement does not identify what the model became.
+
+Never store prompts or response bodies in the observation layer; store only numeric summaries. Routing is bound to a session; a single session only ever reveals one upstream endpoint. Sample the same frozen probe set from many fresh sessions, then group every sample by endpoint id.
+
+Noise floor calibration comes before judgement; without it any difference will look like drift. A verdict must carry the baseline version, the probe set hash, the time window, and the thresholds. Raw observations are append-only, derived signatures are recomputable, and verdicts must be traceable.
+
+The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. A fixed prefix must be byte-identical on every probe run, otherwise the cache channel is meaningless. Backend configuration drift can be observed with usage counters, tokenizer counts, and probability arrays.
+
+Observation is not assertion: a changed measurement does not identify what the model became. Never store prompts or response bodies in the observation layer; store only numeric summaries. Routing is bound to a session; a single session only ever reveals one upstream endpoint.
+
+Sample the same frozen probe set from many fresh sessions, then group every sample by endpoint id. Noise floor calibration comes before judgement; without it any difference will look like drift. A verdict must carry the baseline version, the probe set hash, the time window, and the thresholds.
+
+Raw observations are append-only, derived signatures are recomputable, and verdicts must be traceable. The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. A fixed prefix must be byte-identical on every probe run, otherwise the cache channel is meaningless.
+
+Backend configuration drift can be observed with usage counters, tokenizer counts, and probability arrays. Observation is not assertion: a changed measurement does not identify what the model became. Never store prompts or response bodies in the observation layer; store only numeric summaries.
+
+Routing is bound to a session; a single session only ever reveals one upstream endpoint. Sample the same frozen probe set from many fresh sessions, then group every sample by endpoint id. Noise floor calibration comes before judgement; without it any difference will look like drift.
+
+A verdict must carry the baseline version, the probe set hash, the time window, and the thresholds. Raw observations are append-only, derived signatures are recomputable, and verdicts must be traceable. The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.
+
+A fixed prefix must be byte-identical on every probe run, otherwise the cache channel is meaningless. Backend configuration drift can be observed with usage counters, tokenizer counts, and probability arrays. Observation is not assertion: a changed measurement does not identify what the model became.
+
+Never store prompts or response bodies in the observation layer; store only numeric summaries.

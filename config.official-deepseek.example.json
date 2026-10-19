@@ -1,0 +1,18 @@
+{
+  "$comment": "官方 DeepSeek OpenAI 兼容端点的采集配置（与 config.example.json 二选一；本文件不入 gitignore，可入库参考）。用法：node bin/driftmon.mjs collect --config config.official-deepseek.example.json --sessions 8（key 走环境变量 DEEPSEEK_API_KEY，不写进文件）。",
+  "provider": {
+    "id": "deepseek-official",
+    "api": "openai-completions",
+    "baseURL": "https://api.deepseek.com",
+    "model": "deepseek-flash",
+    "apiKeyEnv": "DEEPSEEK_API_KEY",
+    "sessionHeader": "x-driftmon-session",
+    "timeoutMs": 30000,
+    "retries": 1
+  },
+  "collect": {
+    "sessions": 8,
+    "betweenProbesMs": 0,
+    "sessionPrefix": "drift"
+  }
+}
