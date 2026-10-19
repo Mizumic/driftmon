@@ -22,3 +22,6 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# 本机符号映射（真实路径/本机值，不入库）
+.local/

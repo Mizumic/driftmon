@@ -54,6 +54,11 @@
 
 ## 快速开始
 
+> **让 DSH agent 安装**：agent 请按 [`docs/AGENT-INSTALL.md`](docs/AGENT-INSTALL.md) 执行
+> （符号初始化 → 离线验证 → 配置 → 验证 → 正式工作流 → 回滚，含成本与安全边界）。
+> 机器相关字段（`${DSH_HOME}`、`${WATCH_FILE}` 等）统一由
+> [`docs/SYMBOLS.md`](docs/SYMBOLS.md) 的符号映射表定义，本机取值放 `.local/symbols.env`（gitignored）。
+
 ```bash
 git clone https://github.com/Mizumic/driftmon.git
 cd driftmon
@@ -162,6 +167,8 @@ driftmon/
 
 | 你想干什么 | 读哪份 |
 | --- | --- |
+| **让 DSH agent 安装/升级本仓库** | [`docs/AGENT-INSTALL.md`](docs/AGENT-INSTALL.md)（agent 流程：符号 → 验证 → 配置 → 工作流 → 回滚） |
+| **本机路径等字段怎么落地** | [`docs/SYMBOLS.md`](docs/SYMBOLS.md)（符号映射表；真实值放 `.local/symbols.env`，gitignored） |
 | 决定要不要做、做成什么样 | [`docs/DESIGN.md`](docs/DESIGN.md) |
 | 动手改代码之前 | [`docs/PREREQUISITES.md`](docs/PREREQUISITES.md)（**必读**，全是实测结论和坑） |
 | **想知道文档里的数字是哪来的** | [`docs/EVIDENCE.md`](docs/EVIDENCE.md)（证据索引：脚本 / 产物 / 复现命令 / 可信度） |

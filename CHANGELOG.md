@@ -14,6 +14,9 @@
   并移除 `private`；文档里的本机绝对路径改为通用写法。运行时行为无变化。
 - **CI 维护**：GitHub Actions 升级到 `actions/checkout@v7` / `actions/setup-node@v7`
   （消除 Node 20 runner 弃用告警）；README 增加 CI 状态徽章。
+- **DSH agent 安装文档 + 本机符号映射**：新增 `docs/AGENT-INSTALL.md`（agent 安装/配置/验证/
+  成本与安全边界）与 `docs/SYMBOLS.md`（`${DSH_HOME}`、`${WATCH_FILE}` 等本机字段的符号映射表，
+  实际取值放 gitignored 的 `.local/symbols.env`）；主仓迁移为 GitHub。
 
 ## [0.1.0] - 2026-10-20
 
