@@ -3,6 +3,7 @@
 > **一句话**：在不依赖供应商声明的前提下，持续监测「我调用的模型后端有没有悄悄变」。
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/Mizumic/driftmon/actions/workflows/ci.yml/badge.svg)](https://github.com/Mizumic/driftmon/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933.svg)](package.json)
 [![Tests](https://img.shields.io/badge/tests-64%20passing-brightgreen.svg)](#开发与测试)
 [![Phase](https://img.shields.io/badge/phase-0%2F1%20skeleton-orange.svg)](#当前状态与已知限制)

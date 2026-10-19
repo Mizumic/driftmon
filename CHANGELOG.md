@@ -12,6 +12,8 @@
   `CODE_OF_CONDUCT.md`、`CHANGELOG.md`、GitHub Actions CI、issue/PR 模板、`CODEOWNERS`、
   dependabot 配置；`package.json` 增加 `repository` / `homepage` / `bugs` / `keywords`
   并移除 `private`；文档里的本机绝对路径改为通用写法。运行时行为无变化。
+- **CI 维护**：GitHub Actions 升级到 `actions/checkout@v7` / `actions/setup-node@v7`
+  （消除 Node 20 runner 弃用告警）；README 增加 CI 状态徽章。
 
 ## [0.1.0] - 2026-10-20
 
