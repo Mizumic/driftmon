@@ -6,10 +6,12 @@
 [![CI](https://github.com/Mizumic/driftmon/actions/workflows/ci.yml/badge.svg)](https://github.com/Mizumic/driftmon/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933.svg)](package.json)
 [![Tests](https://img.shields.io/badge/tests-71%20passing-brightgreen.svg)](#开发与测试)
-[![Phase](https://img.shields.io/badge/phase-0%2F1%20skeleton-orange.svg)](#当前状态与已知限制)
+[![Phase](https://img.shields.io/badge/phase%200-calibrated-brightgreen.svg)](#当前状态与已知限制)
 
-**当前状态**：Phase 0/1 骨架已实现（采集 / 签名 / 基线 / 判定 / 报告 + 离线测试），
-**30 轮真实噪声标定还没跑**——跑完 Phase 0 之前，判定阈值都只是默认值。
+**当前状态**：Phase 0/1 骨架已实现（采集 / 签名 / 基线 / 判定 / 报告 + 离线测试）；
+**Phase 0 噪声标定已完成（2026-10-20）**：官方 flash 1017 同一天 **30 轮 / 240 批 / 8640 请求 /
+0 错误**（892k token，2h07m），`noise-floor.json` 的 `verdict=calibrated`、五通道全部可用，
+判定阈值已按噪声底校准（L drop 0.10、S ratio 2.5；见 [`docs/EVIDENCE.md`](docs/EVIDENCE.md) E10）。
 2026-10-20 起有了**已知检查点行为模板**（`data/templates/`，官方 flash 1017 已固化），
 作为灰度检测与「无指纹网关反推检查点」的参考物（尚未接进 `judge`）。
 
@@ -104,8 +106,10 @@ node bin/driftmon.mjs template check          # 最新窗口对模板比较 → 
 * **被动层存储目录解析顺序**：`config.json` 的 `plugin.dshHome` → 环境变量 `DSH_HOME` →
   默认 `<driftmon>/../home`（仅当与 DSH 树并排放置时成立）。换机器时写一份 `config.json`
   或 `export DSH_HOME=/path/to/dsh/home` 即可。
-* **所有判定阈值在 `judge.thresholds` / `gray.thresholds`**，Phase 0 标定后按
-  `data/baselines/` 的噪声底替换；标定前不要拿默认值当对外结论。
+* **所有判定阈值在 `judge.thresholds` / `gray.thresholds`**，默认值已按 Phase 0 噪声底
+  （官方 flash 1017，30 轮 / 240 批）校准：`lMaxTopKJaccardDrop=0.10`、`sTtftRatio=2.5`，
+  G/C 与 `gray.*` 复核后保留；依据与回放数据见 [`docs/EVIDENCE.md`](docs/EVIDENCE.md) E10。
+  换端点 / 换模型 / 换探针组必须重跑 Phase 0，不得沿用这套阈值。
 * 探针组冻结在 [`probes/probe-set.json`](probes/probe-set.json)（`probeSetVersion` +
   `probeSetHash`）；换探针组必须重采基线、重建模板。
 
@@ -124,8 +128,9 @@ L top-k 中位 0.819、C 命中 0.889、TTFT 中位 117ms；L 的 logprob 数值
 `template check` 用最近一轮对模板比较 → `results/watch/gray-watch.json`（当前 `stable`）。
 重建方法与限制见 [`data/templates/README.md`](data/templates/README.md)。
 
-> 边界：模板对比（`template check`）已经能产出 `gray-candidate`/`checkpoint-change` 等告警，
-> 但**判定阈值仍是默认值、需要 Phase 0 标定**；灰度是否可测取决于它是否改变这些可测量分布。
+> 边界：模板对比（`template check`）已经能产出 `gray-candidate`/`checkpoint-change` 等告警；
+> 判定阈值已按 Phase 0 噪声底校准（L 0.10 / S 2.5，见 E10），灰度阈值（`gray.thresholds`）
+> 复核后保留默认值。灰度是否可测取决于它是否改变这些可测量分布。
 
 ## 告警合并到展示层
 
@@ -184,7 +189,7 @@ driftmon/
 | --- | --- |
 | **让 DSH agent 安装/升级本仓库** | [`docs/AGENT-INSTALL.md`](docs/AGENT-INSTALL.md)（agent 流程：符号 → 验证 → 配置 → 工作流 → 回滚） |
 | **本机路径等字段怎么落地** | [`docs/SYMBOLS.md`](docs/SYMBOLS.md)（符号映射表；真实值放 `.local/symbols.env`，gitignored） |
-| **跑 Phase 0 噪声标定** | [`docs/PHASE0-PLAN.md`](docs/PHASE0-PLAN.md)（runbook：成本/时间、采集脚本、noise-floor、阈值 review） |
+| **跑 / 复核 Phase 0 噪声标定** | [`docs/PHASE0-PLAN.md`](docs/PHASE0-PLAN.md)（runbook + 2026-10-20 已完成记录：成本/时间、采集脚本、noise-floor、阈值 review） |
 | 决定要不要做、做成什么样 | [`docs/DESIGN.md`](docs/DESIGN.md) |
 | 动手改代码之前 | [`docs/PREREQUISITES.md`](docs/PREREQUISITES.md)（**必读**，全是实测结论和坑） |
 | **想知道文档里的数字是哪来的** | [`docs/EVIDENCE.md`](docs/EVIDENCE.md)（证据索引：脚本 / 产物 / 复现命令 / 可信度） |
@@ -236,12 +241,17 @@ node bin/driftmon.mjs probe-set hash   # 查看冻结探针组哈希
 
 ## 当前状态与已知限制
 
-* Phase 0/1 骨架完成，**Phase 0 的 30 轮真实噪声标定未跑**：`judge` 阈值均为默认值，
-  `drift-confirmed` 只用于结构验证，不能当作对外结论。
-* `template check` 的灰度阈值同为默认值（`config.gray.thresholds`），`gray-candidate` 只是「疑似」，
-  需要连续复现。
+* **Phase 0 已完成（2026-10-20）**：官方 flash 1017 同一天 30 轮 / 240 批 / 8640 请求 / 0 错误，
+  `data/baselines/noise-floor.json` 的 `verdict=calibrated`、五通道可用；judge 阈值已按噪声底校准
+  （L drop 0.10、S ratio 2.5）。阈值只对该端点/模型/探针组有效；`drift-confirmed` 在跨端点回放
+  验收（Phase 2）之前仍只用于结构验证，不能当作对外结论。
+* `template check` 的灰度阈值（`config.gray.thresholds`）经 Phase 0 复核后保留默认值
+  （噪声底未显示需要调整的证据）；`gray-candidate` 只是「疑似」，需要连续复现。
+* L 通道存在小时级非平稳性：同指纹下 top-k Jaccard 在 0.786↔0.923 模式间漂移（G/C/T 恒定），
+  已按滚动基线计入噪声阈值，跨天/跨时段表现需复核（见 `docs/EVIDENCE.md` 待补）。
 * 行为模板 ≠ 版本识别：模板只能回答「行为是否偏离已知检查点」，不能证明具体版本。
-* 真实网关单会话冒烟已跑通；完整 5 轮官方巡检数据见 `docs/EVIDENCE.md`（E9）。
+* 真实网关单会话冒烟已跑通；完整 5 轮官方巡检数据见 `docs/EVIDENCE.md`（E9），
+  Phase 0 的 30 轮标定原始层在 `data/raw/2026-10-20.jsonl`（gitignored，240 批）。
 
 ## 贡献
 

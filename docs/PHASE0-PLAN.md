@@ -1,20 +1,23 @@
 # Phase 0 · 噪声标定执行计划（runbook）
 
-> **状态（2026-10-20）**：工具已就绪（`baseline noise-floor` + 采集脚本 + 本 runbook）；
-> **30 轮采集尚未跑**（等用户授权/时间窗口）。验收标准见 [`ROADMAP.md`](ROADMAP.md) Phase 0。
+> **状态（2026-10-20）**：**已完成**——官方 `flash 1017` 于 2026-10-20 12:27–14:34 CST 同一天连跑
+> 30 轮 / 240 批 / 8640 请求 / 0 错误（892k token，2h07m）；`noise-floor.json` 的
+> `summary.verdict=calibrated`，五通道全部可用；阈值已按噪声底校准（L drop 0.05→0.10、
+> S ratio 1.5→2.5，G/C/gray 保留）。结果与证据见 [`EVIDENCE.md`](EVIDENCE.md) E10、
+> [`ROADMAP.md`](ROADMAP.md) Phase 0。本文件保留为**可重跑的 runbook**（换端点/换模型时照做）。
 >
 > **原则**：同一端点、同一模型、同一天连跑 ≥30 轮；原始层 append-only；key 只走环境变量；
 > 噪声底只是「自然波动范围」，阈值替换必须人工 review，不自动改 `config.json`。
 
 ## 0. 成本与时间（先看这个）
 
-| 项 | 数值 | 来源 |
-| --- | --- | --- |
-| 一轮 = 8 新会话 × 22 条探针 | 288 个请求 | `collect --dry-run` |
-| 单轮 token | 约 **37.7k** | `collect --dry-run` 的预算口径 |
-| 30 轮 token | 约 **1.1–1.4M** | 37.7k × 30；ROADMAP 估算 ≈ 1.4M |
-| 30 轮费用 | 约 **$0.36**（≈¥2.6） | `docs/ROADMAP.md` / `docs/PREREQUISITES.md §4` |
-| 30 轮时长 | 约 **2 小时**（3.4 min/轮 + 60s 间隔） | 已有 5 轮实测 17.1 分钟 |
+| 项 | 预估 | 实测（2026-10-20 官方 flash 1017） | 来源 |
+| --- | --- | --- | --- |
+| 一轮 = 8 新会话 × 22 条探针 | 288 个请求 | 36 请求/会话 → 288 请求/轮 | `collect --dry-run` |
+| 单轮 token | 约 37.7k | **29.7k**（8640 请求 / 892k token ÷ 30） | 原始层 `usage` 汇总 |
+| 30 轮 token | 约 1.1–1.4M | **892k**（prompt 869k + completion 23k，其中 cached 676k） | `data/raw/2026-10-20.jsonl` |
+| 30 轮费用 | 约 $0.36（≈¥2.6） | 未对账；按 off-peak 口径折算 ≈ **$0.14** | `docs/PREREQUISITES.md §4` |
+| 30 轮时长 | 约 2 小时 | **2h07m**（12:27:31–14:34:44 CST） | 采集日志 |
 
 > 采集会真的花钱。先在 §1 跑 dry-run 确认，再决定是否执行 §3。
 
@@ -41,6 +44,10 @@ key 只从环境变量读（配置文件里只有 `apiKeyEnv` 变量名）。**�
 
 ## 3. 正式采集 30 轮（会花钱）
 
+> **2026-10-20 已执行**：`./scripts/phase0-calibrate.sh --rounds 30 --interval 60`（后台 job，12:27–14:34 CST），
+> 30/30 轮完成、exit 0、240 批 append-only 写入 `data/raw/2026-10-20.jsonl`、0 错误。
+> 中断恢复：状态在 `.local/phase0/rounds.done`，重跑同一命令自动从下一轮续采。
+
 ```bash
 # 前台（~2h，中途 Ctrl-C 可停；重跑同一命令即续跑）
 ./scripts/phase0-calibrate.sh --rounds 30 --interval 60
@@ -61,6 +68,7 @@ nohup ./scripts/phase0-calibrate.sh --rounds 30 --interval 60 \
 CFG=config.official-deepseek.example.json
 node bin/driftmon.mjs baseline build       --config "$CFG"
 node bin/driftmon.mjs baseline noise-floor --config "$CFG" --rounds 30
+node scripts/phase0-threshold-review.mjs   --config "$CFG"   # 只读滚动回放：看各候选阈值会误报多少批
 node bin/driftmon.mjs template check       --config "$CFG"
 node bin/driftmon.mjs judge run            --config "$CFG"
 ```
@@ -84,13 +92,42 @@ node bin/driftmon.mjs judge run            --config "$CFG"
 阈值取「噪声底 + 安全余量」，并在 CHANGELOG/PR 里写清依据数值。改完后重跑
 `template check` / `judge run`：无漂移时结果应是 `stable`/`insufficient`，而不是 `drift-*`。
 
+### 本次标定结果（2026-10-20 官方 flash 1017）
+
+`noise-floor.json`：窗口 30 轮 / 240 批 / 8640 样本（UTC 2026-10-20T04:27–06:34Z），
+`verdict=calibrated`，五通道全部 `usable`：
+
+| 通道 | 结果 |
+| --- | --- |
+| T | 唯一向量 `[18,17,17,39,16]`，240/240 批一致 |
+| L | top-k Jaccard p05/p50/p95 = 0.786 / 0.852 / 1.000（6 种取值）；logprob 退化（中位 0、IQR 0，只用 top-k 集合） |
+| G | 失败 720/3360 = 21.4%，CI95 [0.201, 0.228]，240 批恒等 |
+| C | 命中率恒 0.889（240 批） |
+| S | TTFT p05/p50/p95 = 106 / 128 / 235ms，p95/p50 = 1.84 |
+
+阈值 review（`scripts/phase0-threshold-review.mjs`，以「每条批次之前 30 批」为基线的滚动回放，259 批）：
+
+| 阈值 | 默认值回放误报 | 定值 | 定值回放误报 | 依据 |
+| --- | --- | --- | --- | --- |
+| `judge.lMaxTopKJaccardDrop` | 0.05 → 32/259（12.4%） | **0.10** | 0/259 | 噪声底 p50−p05=0.066 × 1.5；滚动回放自然最大跌落 0.071 |
+| `judge.sTtftRatio` | 1.5 → 3/259（1.2%） | **2.5** | 0/259 | 滚动回放自然最大比值 2.01，向上取 0.5 档 |
+| `judge.gZScore` | 2 → 0/259 | 保留 2 | 0/259 | 失败率是常数（噪声为 0），阈值由统计功效决定 |
+| `judge.cHitRatioDrop` | 0.2 → 0/259 | 保留 0.2 | 0/259 | 命中率是常数（噪声为 0） |
+| `gray.*` | 全部 0 触发 | 保留默认 | — | 对比窗口合并中位数且已按模板区间留余量 |
+
+定值写入 `src/config.mjs` 的 `DEFAULT_CONFIG`（代码默认值）与 `config.example.json`（示例配置）；
+本地 `config.json` 仍可按需覆盖。改完复跑：`template check` = stable、`judge run` = stable。
+
+> 注意：L top-k Jaccard 在窗口内存在小时级非平稳性（0.786 低模式前后段占比变化），
+> 上述阈值按滚动基线口径覆盖了已观测的自然跌落；换时段/跨天需复核（见 EVIDENCE「待补」）。
+
 ## 5. 固化证据与文档（验收）
 
-* [`EVIDENCE.md`](EVIDENCE.md) 增加 **E10**：30 轮窗口、噪声底摘要、模板对比结论；
-* [`ROADMAP.md`](ROADMAP.md) Phase 0 验收项逐条勾选（T 唯一 / L p50+p95 / G p50+CI / S p50+p95 /
+* [x] [`EVIDENCE.md`](EVIDENCE.md) 增加 **E10**：30 轮窗口、噪声底摘要、模板对比结论；
+* [x] [`ROADMAP.md`](ROADMAP.md) Phase 0 验收项逐条勾选（T 唯一 / L p50+p95 / G p50+CI / S p50+p95 /
   不可用通道说明 / 每轮落盘 / 脚本是文件可重跑）；
-* `CHANGELOG.md` 记录标定结果与阈值变更；
-* 提交并推送 GitHub（主仓）。
+* [x] `CHANGELOG.md` 记录标定结果与阈值变更；
+* [ ] 提交并推送 GitHub（主仓）。—— 本地提交已完成；push 待用户确认后执行
 
 ## 6. 定期化（可选，需用户同意）
 

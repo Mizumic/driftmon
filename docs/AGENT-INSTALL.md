@@ -66,7 +66,7 @@ npm test            # 等价于 node --test test/*.test.mjs
 | `plugin.dshHome`（可选） | 填 `${DSH_HOME}`；留空则按 `DSH_HOME` 环境变量 → `<repo>/../home` 解析 |
 | `provider.*` | 端点 `baseURL` / `model` / `apiKeyEnv`（**只写环境变量名**，如 `OPENCODE_API_KEY` 或 `DEEPSEEK_API_KEY`） |
 | `collect.sessions` | 一轮巡检用 8；冒烟用 1 |
-| `judge.thresholds` / `gray.thresholds` | **保持默认**，除非用户明确要求并理解 Phase 0 尚未标定 |
+| `judge.thresholds` / `gray.thresholds` | **保持默认**——默认值已按 2026-10-20 Phase 0 噪声底校准（官方 `flash 1017` 端点/模型）；换端点/模型必须重跑 Phase 0，不要手调 |
 
 凭据只放环境变量：例如 `export OPENCODE_API_KEY=...`（不要让用户把值发给 agent / 写进文件）。
 
@@ -85,7 +85,7 @@ npm test            # 等价于 node --test test/*.test.mjs
 ## 5. 正式工作流（用户明确要求后再跑）
 
 ```bash
-# 一轮完整巡检（K=8，约 4.7k token/会话；按需 --config 指定端点配置）
+# 一轮完整巡检（K=8，实测约 3.7k token/会话、29.7k token/轮；按需 --config 指定端点配置）
 node bin/driftmon.mjs collect --sessions 8
 # 派生层（不联网、可重算）
 node bin/driftmon.mjs baseline build
@@ -101,7 +101,11 @@ node bin/driftmon.mjs template check   # → ${WATCH_FILE}
 ## 6. Phase 0 噪声标定（可选、会花钱；先读 [`PHASE0-PLAN.md`](PHASE0-PLAN.md)）
 
 > 这是「让阈值可信」的前提，**不是安装必需**。真正采集前必须先得到用户明确授权：
-> 30 轮 ≈ 2 小时、≈1.1–1.4M token、≈$0.36；key 只从环境变量读。
+> 30 轮 ≈ 2 小时、**实测 892k token、≈$0.14**（估算 1.1–1.4M token / $0.36）；key 只从环境变量读。
+>
+> **本仓库已于 2026-10-20 完成一次标定**（官方 `flash 1017`：30 轮 / 240 批 / 0 错误，
+> 五通道可用，阈值已校准——结果见 `docs/EVIDENCE.md` E10）。
+> 除非换端点/模型/探针组，或用户明确要求复核，**不要重跑**。
 
 1. dry-run（不花钱）：`./scripts/phase0-calibrate.sh --dry-run`
 2. 冒烟（可选，~38k token）：`node bin/driftmon.mjs collect --sessions 1 --only T,L,G,S`
@@ -110,7 +114,8 @@ node bin/driftmon.mjs template check   # → ${WATCH_FILE}
    （可后台 `nohup`；断点续跑；日志在 `.local/phase0/`）
 4. 派生：`baseline build` → `baseline noise-floor --rounds 30` → 检查 `summary.verdict === "calibrated"`、
    每个端点 `channels.T.distinctVectors === 1`、`unusableChannels` 是否合理
-5. 阈值 review：**人工**按 noise-floor 数值改 `judge.thresholds` / `gray.thresholds`，不要自动改配置
+5. 阈值 review：**人工**按 noise-floor 数值改 `judge.thresholds` / `gray.thresholds`（先跑
+   `node scripts/phase0-threshold-review.mjs --config <cfg>` 看滚动回放误报率），不要自动改配置
 6. 固化：`EVIDENCE.md` 记 E10、`ROADMAP.md` 勾 Phase 0、`CHANGELOG.md` 记录；重跑
    `template check` / `judge run`，无漂移时应是 `stable`/`insufficient` 而非 `drift-*`
 
@@ -137,7 +142,8 @@ systemd timer 同理（`ExecStart=/usr/bin/env bash -lc '…'`）。安装/修�
 2. **数据**：不存 prompt / 响应正文；`${RAW_DIR}` append-only，不修改历史批次。
 3. **成本**：真实采集消耗 token；未经用户同意不跑完整巡检。
 4. **本机字段**：只写符号或 `.local/symbols.env`；不要把绝对路径写进仓库文件/提交。
-5. **不替用户做判定结论**：Phase 0 标定前阈值只是默认值，报告要写明。
+5. **不替用户做判定结论**：阈值只对已标定的端点/模型/探针组有效（本仓库：官方 `flash 1017`），
+   换端点必须重跑 Phase 0；报告要写明这一点。
 
 ## 10. 常见失败
 

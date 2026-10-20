@@ -18,7 +18,7 @@ import { median, signatureOfBatch } from './signature.mjs'
 
 export const WATCH_SCHEMA_VERSION = 1
 
-/** 默认阈值。Phase 0 标定后按噪声底替换（与 judge.thresholds 同理）。 */
+/** 默认阈值。Phase 0 标定（2026-10-20，官方 flash 1017 · 30 轮 / 240 批）复核：噪声底未显示需要调整的证据，保留默认值。 */
 export const GRAY_DEFAULT_THRESHOLDS = {
   /** G 组失败率相对模板的绝对偏移（0.2 = 20 个百分点）。 */
   gFailRateDelta: 0.2,

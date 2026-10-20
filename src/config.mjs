@@ -42,19 +42,20 @@ export const DEFAULT_CONFIG = {
     windowBatches: 30,
   },
   gray: {
-    // 「已知检查点模板」对比阈值（Phase 0 标定后按噪声底替换）
+    // 「已知检查点模板」对比阈值（Phase 0 标定后复核：噪声底不需要调整，保留默认值）
     thresholds: { ...GRAY_DEFAULT_THRESHOLDS },
   },
   judge: {
     nMin: 30,
     windowBatches: 30,
-    // 阈值都是「Phase 0 标定前的默认值」，标定后按 noise-floor 替换（见 docs/ROADMAP.md）
+    // 阈值已按 2026-10-20 Phase 0 噪声底（官方 flash 1017 · 30 轮 / 240 批 / 8640 样本）
+    // 校准；依据与回放数据见 docs/EVIDENCE.md E10、CHANGELOG 与 scripts/phase0-threshold-review.mjs。
     thresholds: {
-      lMaxTopKJaccardDrop: 0.05, // 本批 top-k 重合度比基线 p50 低多少算异常
-      lLogprobIqrZ: 2, // |中位数偏移| / 基线 iqr 超过多少算异常
-      gZScore: 2, // G 组失败率的二项检验 z 阈值
-      cHitRatioDrop: 0.2, // cache 命中率相对基线 p50 的下降阈值
-      sTtftRatio: 1.5, // TTFT 中位数 / 基线 p95 超过多少算异常
+      lMaxTopKJaccardDrop: 0.10, // 本批 top-k 重合度比基线 p50 低多少算异常（噪声底 p50−p05=0.066，回放取 0.10；0.05 会误报 12.4% 批次）
+      lLogprobIqrZ: 2, // |中位数偏移| / 基线 iqr 超过多少算异常（Phase 0 实测 logprob 退化：IQR=0，该子信号实际不参与）
+      gZScore: 2, // G 组失败率的二项检验 z 阈值（Phase 0 失败率是常数 0.214，噪声为 0；保留 2 由统计功效决定）
+      cHitRatioDrop: 0.2, // cache 命中率相对基线 p50 的下降阈值（Phase 0 命中率是常数 0.889，噪声为 0）
+      sTtftRatio: 2.5, // TTFT 中位数 / 基线 p95 超过多少算异常（滚动回放自然最大 2.01，取 2.5；1.5 会误报 1.2% 批次）
     },
     // 至少几个独立通道同向才允许升级为 drift-candidate
     minIndependentChannels: 2,

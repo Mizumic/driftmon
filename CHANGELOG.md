@@ -5,8 +5,22 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 0 阈值 review 回放工具**：`scripts/phase0-threshold-review.mjs`（只读、不联网、不写文件）——
+  以「每条批次之前 30 批」为滚动基线回放原始层，统计 L drop / S ratio / G z / C drop 在各候选阈值下
+  会触发多少批，供人工把判定阈值从默认值换成噪声底推导值；不参与判定链。
+
 ### Changed
 
+- **Phase 0 噪声标定完成（2026-10-20，官方 flash 1017）**：同一天连跑 **30 轮 / 240 批 / 8640 请求 /
+  0 错误**（892k token，2h07m），`baseline noise-floor` 输出 `summary.verdict=calibrated`、
+  `window.rounds=30`、T 向量 240/240 唯一、五通道全部 `usable`（数据见 `docs/EVIDENCE.md` E10）。
+  据此校准判定阈值：`judge.thresholds.lMaxTopKJaccardDrop` **0.05 → 0.10**、
+  `judge.thresholds.sTtftRatio` **1.5 → 2.5**——滚动回放显示旧默认值在正常数据上会误报
+  12.4% / 1.2% 批次，新值 0/259 触发；`gZScore` / `cHitRatioDrop` / `gray.thresholds.*`
+  复核后保留（G 失败率与 C 命中率在噪声底里是常数）。修后 `template check` 与 `judge run`
+  复跑均 `stable`；测试仍 71 项全过。
 - **开源发布准备**：README 重写为 GitHub 发布标准结构（新增目录、环境要求、配置、开发与测试、
   相关仓库、贡献/安全/许可证入口）；新增 `CONTRIBUTING.md`、`SECURITY.md`、
   `CODE_OF_CONDUCT.md`、`CHANGELOG.md`、GitHub Actions CI、issue/PR 模板、`CODEOWNERS`、
@@ -19,7 +33,7 @@
   实际取值放 gitignored 的 `.local/symbols.env`）；主仓迁移为 GitHub。
 - **DSH 版本声明**：README 增加「DSH 版本声明」（driftmon 不依赖 DSH 版本，仅通过插件产物契约 v1 间接耦合；验证组合 DSH `0.2.0-rc.2` + 插件 `0.3.0`）；`docs/DEPENDENCY.md` 增加「DSH 版本耦合」一节，`docs/AGENT-INSTALL.md` 前置条件同步说明。
 - **文档澄清**：`docs/SYMBOLS.md` 最后一列明确标注「示例（占位，非本机值）」，`docs/symbols.example.env` 头部也强调全部是占位符（`docs/DEPENDENCY.md` 布局示例同步标注）——避免把示例路径误读为「本机映射被入库」。真实映射只在 gitignored 的 `.local/symbols.env`。
-- **Phase 0 标定工具**（数据待采集）：新增 `baseline noise-floor` 命令——按端点/通道汇总
+- **Phase 0 标定工具**：新增 `baseline noise-floor` 命令——按端点/通道汇总
   自然波动（T 唯一性、L top-k p50/p95、G 失败率+CI、C 命中率、S TTFT），逐通道标注可用性
   并写 `data/baselines/noise-floor.json`；新增 `scripts/phase0-calibrate.sh`（30 轮、dry-run、
   断点续跑、日志/状态在 `.local/phase0/`）、`docs/PHASE0-PLAN.md`（runbook：成本/时间、

@@ -11,8 +11,12 @@ Phase 0/1 的**代码骨架已就绪**：`collect`（K 新会话 × 冻结探针
 官方端点已用 5 轮完整巡检固化 `flash 1017` 行为模板（40 批 / 1440 样本 / 0 错误，见
 `data/templates/` 与 `docs/EVIDENCE.md` E9）。
 
-**但仍然没有跑 Phase 0 的 30 轮标定**——下面各 Phase 的验收项一个都没勾（那需要连续真实采集）。
-在标定完成之前：判定阈值是默认值、`drift-confirmed` 只用于结构验证，不能当作对外结论。
+**Phase 0 的 30 轮标定已于 2026-10-20 完成**（官方端点同一天 30 轮 / 240 批 / 8640 请求 / 0 错误，
+`noise-floor.json` 的 `verdict=calibrated`，五通道全部可用，见 `docs/EVIDENCE.md` E10）。
+判定阈值已按噪声底校准（`lMaxTopKJaccardDrop 0.05→0.10`、`sTtftRatio 1.5→2.5`；G/C 与
+`gray.*` 复核后保留），`template check` / `judge run` 复跑均为 `stable`。
+**但阈值只在官方 flash 1017 这一端点/模型上标定过**：换端点、换模型或换探针组必须重跑 Phase 0；
+`drift-confirmed` 在跨端点回放验收（Phase 2）之前仍只用于结构验证。
 
 ---
 
@@ -27,25 +31,31 @@ Phase 0/1 的**代码骨架已就绪**：`collect`（K 新会话 × 冻结探针
 
 **验收标准**
 
-* [ ] **按端点分组后**，同一端点的 `T` 通道向量**始终完全相同**（不同则说明探针组没冻结或存在隐藏变量）；
+* [x] **按端点分组后**，同一端点的 `T` 通道向量**始终完全相同**（不同则说明探针组没冻结或存在隐藏变量）；
       跨端点不同是**预期的**（实测 `manhattan=36` vs `orcarouter=64`），必须归入路由差异而不是噪声；
-* [ ] `L` 通道给出 top-k Jaccard 重合度的 p50 / p95；
-* [ ] `G` 通道给出失败率的 p50 与 95% 置信区间；
-* [ ] `S` 通道给出 TTFT 的 p50 / p95；
-* [ ] 明确写出**哪些通道噪声太大、不足以支撑判定**（允许结论是"这条通道不能用"）；
-* [ ] **每一轮的原始输出都已落盘**到 `data/raw/`（不允许只 print）——这是本次的教训，见 `docs/EVIDENCE.md`；
-* [ ] 采集脚本本身是**文件**（不是一次性内联命令），且能一键重跑出同一格式。
+      （2026-10-20：`direct:deepseek-official` 240/240 批恒为 `[18,17,17,39,16]`）
+* [x] `L` 通道给出 top-k Jaccard 重合度的 p50 / p95（2026-10-20：p50=0.852、p05=0.786、p95=1.000）；
+* [x] `G` 通道给出失败率的 p50 与 95% 置信区间（2026-10-20：失败 720/3360=21.4%，CI [0.201,0.228]）；
+* [x] `S` 通道给出 TTFT 的 p50 / p95（2026-10-20：128 / 235ms）；
+* [x] 明确写出**哪些通道噪声太大、不足以支撑判定**（本次结论：五通道全部可用；L 的 logprob 子信号退化
+      IQR=0，实际只用 top-k 集合；L top-k 存在小时级非平稳性，已计入阈值）；
+* [x] **每一轮的原始输出都已落盘**到 `data/raw/`（`data/raw/2026-10-20.jsonl`，240 批，不允许只 print）
+      ——这是本次的教训，见 `docs/EVIDENCE.md`；
+* [x] 采集脚本本身是**文件**（不是一次性内联命令），且能一键重跑出同一格式
+      （`scripts/phase0-calibrate.sh`，可 dry-run/断点续跑）。
 
 **产出**：`data/raw/*.jsonl` + `data/baselines/noise-floor.json`
 
-**执行工具（2026-10-20 就绪，数据尚未采集）**：
+**执行工具（2026-10-20 完成采集；工具可重跑）**：
 
 * 采集：`scripts/phase0-calibrate.sh`（30 轮、可 dry-run、可断点续跑，状态/日志写 `.local/phase0/`）；
 * 派生：`driftmon baseline noise-floor [--rounds 30]` → 按端点/通道的自然波动分布 + 可用性判定；
+* 阈值 review：`scripts/phase0-threshold-review.mjs`（只读滚动回放，人工定阈值）；
 * runbook：`docs/PHASE0-PLAN.md`（成本/时间、步骤、阈值 review、验收映射）。
 
 **"轮"的定义（全局统一，别处都按这个）**：**一轮巡检 = K≥8 个新会话，每个会话发一次完整探针组**。
-Phase 0 的"30 轮"= 30 轮巡检 = 240 次探针组 ≈ 1.4M token ≈ **$0.36**（详见 `PREREQUISITES.md §4`）。
+Phase 0 的"30 轮"= 30 轮巡检 = 240 次探针组；**实测** 892k token / 8640 请求 / 2h07m
+（估算 1.4M token ≈ $0.36，实际更低；详见 `PREREQUISITES.md §4` 与 `docs/EVIDENCE.md` E10）。
 
 ---
 

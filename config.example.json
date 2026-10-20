@@ -35,11 +35,11 @@
     "nMin": 30,
     "windowBatches": 30,
     "thresholds": {
-      "lMaxTopKJaccardDrop": 0.05,
+      "lMaxTopKJaccardDrop": 0.1,
       "lLogprobIqrZ": 2,
       "gZScore": 2,
       "cHitRatioDrop": 0.2,
-      "sTtftRatio": 1.5
+      "sTtftRatio": 2.5
     },
     "minIndependentChannels": 2,
     "confirmRounds": 2
