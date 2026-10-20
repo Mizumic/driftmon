@@ -13,6 +13,11 @@
 
 ### Changed
 
+- **`checkpoint-change` 告警升级为 critical（标红）**：`template check` 检测到
+  `system_fingerprint` 与模板不同时，告警文件 `level` 由 `warn` 改为 `critical`——
+  指纹变化是「确定发生」的检查点切换，展示层（如 dsh-system-fingerprint 徽标）直接标红；
+  行为疑似（`gray-candidate`）与配置变化（`config-change`）仍为 `warn`（黄色），
+  `infra-change` 仍为 `info`（不变色）。测试断言同步更新（71 项全过）。
 - **Phase 0 噪声标定完成（2026-10-20，官方 flash 1017）**：同一天连跑 **30 轮 / 240 批 / 8640 请求 /
   0 错误**（892k token，2h07m），`baseline noise-floor` 输出 `summary.verdict=calibrated`、
   `window.rounds=30`、T 向量 240/240 唯一、五通道全部 `usable`（数据见 `docs/EVIDENCE.md` E10）。

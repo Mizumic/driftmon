@@ -123,6 +123,8 @@ node bin/driftmon.mjs template check   # → ${WATCH_FILE}
 
 让插件展示 driftmon 的行为告警：在插件的 profile 配置里设置
 `externalAlertFile: ${WATCH_FILE}`（插件侧 `display-only`，文件缺失静默降级）。
+等级映射：`checkpoint-change` → `critical`（徽标红 ⚠）、`gray-candidate`/`config-change` →
+`warn`（黄 ⚠）、`infra-change` → `info`（不变色）；稳定态是 `ok`。
 反向不做：driftmon 不写插件目录、不 import 插件代码。
 
 ## 8. 定时化（需用户同意）

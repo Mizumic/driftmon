@@ -137,7 +137,9 @@ L top-k 中位 0.819、C 命中 0.889、TTFT 中位 117ms；L 的 logprob 数值
 `template check` 写 `results/watch/gray-watch.json`（通用 schema v1，不绑定具体宿主）。
 [`dsh-system-fingerprint`](https://github.com/Mizumic/dsh-system-fingerprint) 可选配置
 `externalAlertFile` 指向它：warn/critical 时提醒合并进指纹徽标（`⚠` + 警示色），详情进悬浮卡片。
-插件不感知 driftmon；文件缺失/损坏静默降级。这个文件属于**可选展示契约**，
+等级映射：**`checkpoint-change`（指纹变化）→ `critical`（徽标红色 ⚠）**；
+`gray-candidate` / `config-change` → `warn`（黄色 ⚠）；`infra-change` → `info`（不变色，仅悬浮卡）；
+`stable` → `ok`。插件不感知 driftmon；文件缺失/损坏静默降级。这个文件属于**可选展示契约**，
 不属于两个仓库必需的文件契约（后者见 [`docs/DEPENDENCY.md`](docs/DEPENDENCY.md)）。
 
 ## 数据与目录约定（四层分离）

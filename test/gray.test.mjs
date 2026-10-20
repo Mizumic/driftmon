@@ -80,7 +80,7 @@ test('模板对比：指纹变化 → checkpoint-change（优先于行为通道�
   }), '0123456789abcdef0123456789abcdef')
   const compared = compare(template, fresh)
   assert.equal(compared.verdict, 'checkpoint-change')
-  assert.equal(compared.level, 'warn')
+  assert.equal(compared.level, 'critical') // 指纹变化是确定变更：直接标红
   assert.match(compared.message, /指纹与模板不同/u)
 })
 

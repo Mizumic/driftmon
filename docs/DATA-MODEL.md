@@ -215,7 +215,7 @@
 {
   "version": 1,
   "kind": "behavior-watch",
-  "level": "ok | info | warn",
+  "level": "ok | info | warn | critical",
   "verdict": "stable | insufficient | gray-candidate | checkpoint-change | config-change | infra-change",
   "updatedAt": 1792435200000,
   "message": "一句话结论",

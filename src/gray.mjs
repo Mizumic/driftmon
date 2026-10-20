@@ -5,7 +5,7 @@
 //
 // 判定是保守的、可解释的：
 //   insufficient      窗口样本不够，不给结论
-//   checkpoint-change 指纹与模板不同（官方换了检查点/配置）
+//   checkpoint-change 指纹与模板不同（官方换了检查点/配置）→ level=critical（徽标标红）
 //   gray-candidate    指纹相同，但行为通道（L top-k / G）超出模板噪声 → 疑似灰度/静默变更
 //   config-change     指纹相同，但 T 向量或 C 命中变化 → tokenizer/缓存/服务栈配置变化
 //   infra-change      仅 S（TTFT）异常 → 服务栈/负载，不是模型信号
@@ -259,7 +259,9 @@ export function compareToTemplate (options) {
   result.signals = channelSignals
   if (checkpointChanged) {
     result.verdict = 'checkpoint-change'
-    result.level = 'warn'
+    // 指纹变化是「确定发生」的版本变更（不是疑似），展示层直接标红（critical）；
+    // 行为/配置类才是 warn（黄），S 类 infra-change 是 info（不变色）。
+    result.level = 'critical'
     result.message = '指纹与模板不同：官方检查点/配置已变化（这不是灰度，是可观测的版本变更）'
   } else if (behaviorChanged.length > 0) {
     result.verdict = 'gray-candidate'
