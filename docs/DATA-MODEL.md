@@ -183,6 +183,77 @@
 
 ---
 
+## 派生参考：官方 tokenizer 参考层 `data/reference/` + 核验结果 `results/reference/`
+
+**性质**：T 通道的**绝对参照**，不是从原始层重算出来的，而是用官方参考实现
+（[`deepseek-recipe`](https://github.com/deepseek-ai/deepseek-recipe)，MIT）离线计算、**人工评审后入库**。
+它只回答「tokenizer / prompt 模板 / 请求渲染路径是否与官方参考实现一致」，不参与 L/G/C/S 判定。
+生成与刷新流程见 [`docs/TOKENIZER-REFERENCE.md`](TOKENIZER-REFERENCE.md)。
+
+### `data/reference/official-tokenizer-v41.json`（入库，只读）
+
+```jsonc
+{
+  "version": 1,
+  "kind": "official-tokenizer-reference",
+  "referenceImplementation": {
+    "package": "deepseek-recipe",
+    "version": "0.2.0",                    // 官方实现版本
+    "sourceCommit": "935817c…",            // 取 tokenizer/渲染规则的上游 commit
+    "modelVersion": "DeepSeek-V4.1-Flash",
+    "encoding": "DeepseekV41Encoding",
+    "modelAliases": ["deepseek-flash", "DeepSeek-V4.1-Flash"]
+  },
+  "tokenizer": {
+    "path": "static/tokenizers/v41/tokenizer.json",
+    "sha256": "sha256:81f64d12…",          // ★ 内容哈希，锁定 tokenizer 版本
+    "gitBlobSha": "3abdf13e…",             // 上游文件 blob（check-upstream.mjs 用）
+    "license": "MIT"
+  },
+  "probeSet": { "version": "0.1.0-phase0", "hash": "sha256:18c0…" },   // ★ 换探针组即作废
+  "requestTemplate": { "model": "deepseek-flash", "messages": [...], "max_tokens": "...", "params": "..." },
+  "probes": [
+    { "probeId": "t-ascii", "promptTokens": 18, "fullVocabularyTokens": 18 },
+    { "probeId": "t-special", "promptTokens": 39, "fullVocabularyTokens": 29 }
+  ],
+  "vector": [18, 17, 17, 39, 16]           // ★ 期望 T 向量
+}
+```
+
+**不变量**：
+
+1. 工件生成时的请求形状必须与 `src/collect.mjs` 的 `buildRequest()` 一致（否则算的不是同一件事）；
+2. `probeSet.hash` 必须与当前冻结探针组一致，`probes` 顺序必须与 T 组顺序一致；
+3. 工件**只能**通过 `scripts/build-tokenizer-reference.py` 生成/刷新，且刷新需要人工 review
+   （脚本检测到变化会写 `.candidate.json` 并拒绝覆盖）；
+4. 运行时只读，不联网；不依赖 Python / Rust / tokenizers 包（driftmon 仍纯 Node、零运行时依赖）。
+
+### `results/reference/tokenizer-check.json`（派生，gitignored，可重建）
+
+`driftmon reference check` 的输出：把窗口内实测 T 向量与上述工件比对。
+
+```jsonc
+{
+  "version": 1,
+  "kind": "official-tokenizer-check",
+  "at": 1792489690575,
+  "status": "match | mismatch | insufficient",
+  "detail": "一句话结论",
+  "reference": { "package": "deepseek-recipe", "version": "0.2.0", "tokenizerSha256": "sha256:…", "probeSetHash": "…" },
+  "window": { "batches": 8, "from": …, "to": … },
+  "expected": { "vector": [18, 17, 17, 39, 16], "probes": [ … ] },
+  "observed": { "vectors": [[18, 17, 17, 39, 16]], "batches": 8, "skipped": 0 },
+  "diffs": [ { "probeId": "t-special", "expected": 39, "observed": 38 } ],
+  "provider": "deepseek-official",
+  "model": "deepseek-flash"
+}
+```
+
+**不变量**：`match` 只表示 T 层与官方参考一致，**不代表权重没变**；`mismatch` 必须给出逐探针
+`diffs`（不允许只给一个布尔值）；`insufficient` 是合法结论。
+
+---
+
 ## 层 ④：判定层 `results/`
 
 ### `results/alerts/`（机器可读）

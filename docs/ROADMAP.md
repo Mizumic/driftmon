@@ -83,6 +83,33 @@ Phase 0 的"30 轮"= 30 轮巡检 = 240 次探针组；**实测** 892k token / 8
 
 ---
 
+## T 通道官方参照（2026-10-20，Phase 1 旁支）
+
+**做什么**：用官方开源的 [`deepseek-recipe`](https://github.com/deepseek-ai/deepseek-recipe)
+（官方称其处理逻辑与 DeepSeek 官方 API 完整对齐）+ 自带 v41 tokenizer，**离线**算出冻结探针组的
+期望 `prompt_tokens`，作为 T 通道的绝对参照；接入 `reference check`，让「token 计数对不对」
+不再只依赖自比基线（自比基线发现不了「一开始就连着被换过的链路」）。
+
+**验收标准**
+
+* [x] 参考实现版本与内容哈希固定：`deepseek-recipe` 0.2.0、源码 commit `935817c…`、v41 tokenizer
+      SHA-256 `81f64d12…`；工件 `data/reference/official-tokenizer-v41.json` 入库（含 `probeSetHash`）；
+* [x] 5 条 T 探针期望向量 `[18,17,17,39,16]` 与 E9/E10 的 240/240 实测**逐项一致**（E11）→
+      `flash 1017` 模板的 T 向量有官方实现背书；
+* [x] `reference check` 可重跑、不联网、不花 token；`status` / `template check` 输出参照状态
+      （不改 `gray-watch.json` schema，不影响展示契约）；
+* [x] 离线测试把「工件 T 向量 = 模板 T 向量」固化成回归断言（测试 71 → 77 项）；
+* [ ] 上游刷新流程实战演练一次（上游换 tokenizer / prompt 模板时，按
+      `docs/TOKENIZER-REFERENCE.md` §4 review `.candidate.json` 再替换）；
+* [ ] `judge` / `gray` 判定链在 T 变化时附带「官方参照是否一致」的归因提示（当前只在
+      `template check` 的 stdout 里显示，未写进告警文件）。
+
+**产出**：`data/reference/official-tokenizer-v41.json`、`src/tokenizer-reference.mjs`、
+`scripts/build-tokenizer-reference.py`、`test/tokenizer-reference.test.mjs`、
+`docs/TOKENIZER-REFERENCE.md`。
+
+---
+
 ## Phase 1 · 单通道可用性验证
 
 **做什么**：把三个原型探针收进 `src/`，逐通道验证"能不能真的区分两个不同的后端"

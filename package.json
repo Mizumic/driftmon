@@ -9,7 +9,8 @@
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "status": "node bin/driftmon.mjs status",
-    "hash": "node bin/driftmon.mjs probe-set hash"
+    "hash": "node bin/driftmon.mjs probe-set hash",
+    "upstream:check": "node scripts/check-upstream.mjs"
   },
   "engines": {
     "node": ">=20"

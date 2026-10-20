@@ -23,9 +23,11 @@ export function pathsOf (config) {
     raw: join(data, 'raw'),
     baselines: join(data, 'baselines'),
     templates: join(data, 'templates'),
+    reference: join(data, 'reference'),
     alerts: join(results, 'alerts'),
     reports: join(results, 'reports'),
     watch: join(results, 'watch'),
+    referenceChecks: join(results, 'reference'),
   }
 }
 
@@ -138,4 +140,17 @@ export function templateFileFor (paths, checkpointNameOrFingerprint) {
 export function reportFileFor (paths, at, provider, model) {
   const day = new Date(at).toISOString().slice(0, 10)
   return join(paths.reports, `${day}-${safeName(provider)}-${safeName(model)}.md`)
+}
+
+/**
+ * 官方 tokenizer 参考工件（T 通道绝对参照；入库的是评审过的冻结值，运行时只读）。
+ * 生成方式见 scripts/build-tokenizer-reference.py 与 docs/TOKENIZER-REFERENCE.md。
+ */
+export function tokenizerReferenceFileFor (paths) {
+  return join(paths.reference ?? join(paths.data, 'reference'), 'official-tokenizer-v41.json')
+}
+
+/** T 通道核验结果（派生层，可重建；schema 见 docs/DATA-MODEL.md）。 */
+export function tokenizerCheckFileFor (paths) {
+  return join(paths.referenceChecks ?? join(paths.results, 'reference'), 'tokenizer-check.json')
 }

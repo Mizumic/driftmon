@@ -7,9 +7,34 @@
 
 ### Added
 
+- **T 通道官方参照（2026-10-20，E11）**：用官方开源的 `deepseek-recipe` 0.2.0 + 自带 v41 tokenizer
+  离线算出冻结探针组的期望 `prompt_tokens`，固化成入库工件
+  `data/reference/official-tokenizer-v41.json`（tokenizer 由 SHA-256 锁定、登记包版本与源码 commit）。
+  新增 `src/tokenizer-reference.mjs`（工件自检 + 窗口比对纯函数）、`driftmon reference check`
+  （实测 T 向量 vs 官方参考 → `results/reference/tokenizer-check.json`），`status` 与
+  `template check` 增加参照摘要；新增 `scripts/build-tokenizer-reference.py`（dev-only，Python +
+  `deepseek-recipe`，不进运行时）与 `docs/TOKENIZER-REFERENCE.md`。**实测**：5 条 T 探针期望
+  `[18,17,17,39,16]` 与 E9/E10 的 240/240 实测**逐项一致** → `flash 1017` 模板的 T 向量获得官方实现
+  背书；`t-special` 的 prompt/完整词表编码差（39 vs 29）验证了 special-token 防注入语义。
+  测试 71 → **77 项**（新增工件/比对/CLI 端到端断言）。
+- **上游参考实现更新检查**：`scripts/check-upstream.mjs` + `npm run upstream:check`——只读检查
+  `deepseek-recipe` main/commit、v41 tokenizer blob、`DeepInfer` main 是否偏离仓库记录的基线；
+  有变化退出 1 并给出处理指引（T 参照刷新纪律见 `docs/TOKENIZER-REFERENCE.md` §4–§5）。
+- **官方参考实现的思路引用**：`docs/PREREQUISITES.md` 新增 §7——把 DeepInfer / deepseek-recipe
+  中与判定相关的官方事实（默认 checkpoint 身份、batch-invariant 与确定性、跨平台数值差异、
+  会改变行为但不改权重的开关清单、YoCo 截断、KV cache 语义、V4/V4.1 能力差异）映射到本项目的
+  通道与归因逻辑；**明确不运行 DeepInfer、不作运行时依赖**。
 - **Phase 0 阈值 review 回放工具**：`scripts/phase0-threshold-review.mjs`（只读、不联网、不写文件）——
   以「每条批次之前 30 批」为滚动基线回放原始层，统计 L drop / S ratio / G z / C drop 在各候选阈值下
   会触发多少批，供人工把判定阈值从默认值换成噪声底推导值；不参与判定链。
+
+### Changed
+
+- **T 通道官方参照接入现有命令与文档**：`status` 显示工件摘要与最近一次核验结果；
+  `template check` 在输出里追加一行官方 T 参照状态（无工件时静默跳过，**不改 gray-watch.json
+  schema，不影响既有展示契约**）；README 增加「T 通道官方参照」一节、目录与测试徽章更新
+  （71 → 77）；`docs/EVIDENCE.md` 新增 E11 与复现命令；`docs/DATA-MODEL.md` 新增
+  `data/reference/` + `results/reference/` 的字段与不变量。运行时仍纯 Node、零依赖。
 
 ### Changed
 

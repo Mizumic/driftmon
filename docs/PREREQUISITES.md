@@ -144,3 +144,34 @@
 
 driftmon 同理：**"样本不足"是一个合法的判定结果**，不能因为"必须给个结论"就把噪声说成漂移。
 
+---
+
+## 7. 官方参考实现的旁证（2026-10-20，思路引用；不运行、不作依赖）
+
+2026-10-16/20，DeepSeek 官方开源了推理框架 [`DeepInfer`](https://github.com/deepseek-ai/DeepInfer)
+与 Token 编解码组件 [`deepseek-recipe`](https://github.com/deepseek-ai/deepseek-recipe)。
+**本项目不运行 DeepInfer、不引入它的代码，也不把它的性能/部署假设带进来**；这里只记录
+「它解释了我们观测到的哪些现象 / 提供了哪些可以用的参照」，避免把「我们不知道原因」写成设计。
+
+依据：两个仓库的 README、`deepinfer/environ.py`、`tests/models/*`、
+`deepseek-recipe` 的 tokenizer/encoding 源码，以及官方部署 Q&A
+（[`doc/DeepSeek V4.1 Flash 推理部署 Q&A.pdf`](https://github.com/deepseek-ai/DeepInfer/blob/main/doc/DeepSeek%20V4.1%20Flash%20%E6%8E%A8%E7%90%86%E9%83%A8%E7%BD%B2%20Q%26A.pdf)）。
+阅读版本：DeepInfer main `8b16149…`、deepseek-recipe `0.2.0`（main `935817c…`）。
+
+| 官方信息（来源） | 对本项目的意义 | 落地位置 |
+| --- | --- | --- |
+| 默认 checkpoint 是 `deepseek-ai/DeepSeek-V4.1-Flash-1017`（`examples/_config.py`） | 「flash 1017」有了官方出处；模板名不再只是我们自己起的名字 | `data/templates/checkpoint-flash_1017.json`、E9 |
+| 官方 Q&A 称 `deepseek-recipe` 的处理逻辑与 DeepSeek 官方 API「完整对齐」；它自带 V4.1 tokenizer 与 prompt 渲染 | T 通道可以做**绝对参照**：离线算期望 `prompt_tokens`，识别 tokenizer/模板/请求渲染路径变化 | [`docs/TOKENIZER-REFERENCE.md`](TOKENIZER-REFERENCE.md)、`reference check`、E11 |
+| `DEEPINFER_BATCH_INVARIANT` 是可选开关（示例默认开、eval 默认不开、NPU 不支持）；官方测试要求 batch-invariant 下 token/logprob/top-k **逐位一致**，decode-step logprob 与 full prefill 的 KL 为 0 | 解释了为什么 `temperature: 0` 也不可复现（见 §2.1）；也给出一个**配置变化信号**：如果某天观测变成「逐次完全一致/噪声突然消失」，可能是对方开了 batch-invariant，而不是模型变稳 | §2.1；`docs/TOKENIZER-REFERENCE.md` §5 |
+| 同一 checkpoint 的 golden PPL 在 NVIDIA 与 Ascend 平台**数值不同**（如 1.02908 vs 1.02973），但同平台内要求逐位相等 | 跨端点/跨硬件不能比 logprob 绝对值；L 通道只用 top-k 集合是正确的（§2.1、§2.4） | §2、`docs/DESIGN.md` §6 |
+| `environ.py` 里的运行时开关会**不改权重就改变机械行为**：batch-invariant、`USE_NEXTN_DECODE`/MTP varlen、DFLASH confidence 温度、`SAMPLER_FORCE_TOPK`、`DECODE_TOKEN_BLACKLIST`（官方 eval 默认屏蔽 token 0/2/129262..129264）、YoCo prefill 截断、xgrammar 结构化输出、EPLB | 漂移归因清单：L/G 动而 T 不动时，先怀疑采样/解码/部署配置，而不是权重；C/S 更像缓存与基础设施 | `docs/DESIGN.md` §5；`template check` 的 `config-change`/`infra-change` 分类 |
+| YoCo SWA Bounded Replay：长 prompt 只重算最后 128 token，前缀命中长度上限 L−134；V4.1 的 store 层数/窗口有固定参数 | 长上下文探针的差异可能是「官方本来就会截断重算」，不能当漂移；当前探针都很短（<30 token）不受影响 | §2；以后加长上下文通道前必须读 |
+| KV cache 放在 3FS、TTL 3 天（agent）/7 天（chatbot），命中长度由 Block KVCache + SWA KVCache 决定 | C 通道测的是服务栈/缓存基础设施，不是模型权重；C 变化应是 `config-change` 候选 | `docs/DESIGN.md` §5、`template.mjs` 的 `configChannels` |
+| V4 vs V4.1 的能力差异（图片、mid-conversation system message、deferred tool loading、`top_p` 归一化、`max_tokens` 默认 8192/65536/131072、上限 393216） | 兜底判别：若怀疑别名映射换了模型版本，可用这些行为探针区分；本项目只监测官方 `deepseek-flash`，不主动做版本归因 | `docs/DESIGN.md` §1「反问题」 |
+
+**明确不做**：不 clone/运行 DeepInfer、不引入 Rust 构建、不用它当 ground truth 模板（本地也跑不了：
+需要 SM100/Ascend 950、CUDA 13，开源版还缺 KV cache、P/D 分离与负载均衡）。
+它在本项目里的角色只有两个：**解释现象**（为什么噪声长这样）和**提供离线参照**（T 通道的
+官方 tokenizer/模板，见 `docs/TOKENIZER-REFERENCE.md`）。
+
+

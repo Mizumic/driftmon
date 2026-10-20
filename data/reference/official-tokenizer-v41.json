@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "kind": "official-tokenizer-reference",
+  "generatedAt": 1792489568786,
+  "note": "T 通道的官方参考值：由 deepseek-recipe 的 V4.1 prompt 渲染 + 自带 v41 tokenizer 离线算出，对应请求形状与 driftmon 冻结探针组一致。仅用于 T 通道「身份/配置」核验，不参与 L/G/C/S 判定。",
+  "referenceImplementation": {
+    "package": "deepseek-recipe",
+    "version": "0.2.0",
+    "pythonImport": "deepseek_recipe",
+    "sourceRepo": "https://github.com/deepseek-ai/deepseek-recipe",
+    "sourceCommit": "935817c66f5d6e64838f419692545f06787e485f",
+    "modelVersion": "DeepSeek-V4.1-Flash",
+    "encoding": "DeepseekV41Encoding",
+    "modelAliases": [
+      "deepseek-flash",
+      "DeepSeek-V4.1-Flash"
+    ],
+    "alignmentClaim": "官方部署 Q&A（DeepInfer/doc/DeepSeek V4.1 Flash 推理部署 Q&A.pdf）称 deepseek-recipe 的处理逻辑与 DeepSeek 官方 API 完整对齐"
+  },
+  "tokenizer": {
+    "path": "static/tokenizers/v41/tokenizer.json",
+    "sha256": "sha256:81f64d1248a68ce3663e07ab3ee48b851e5df0e32d27cb98e4c9a268151e8d99",
+    "gitBlobSha": "3abdf13e3488acc65e11e6a57f073f6673175c3a",
+    "sizeBytes": 6367247,
+    "license": "MIT",
+    "upstreamModel": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
+    "upstreamComparisonRevision": "6821d6ad3681a4b137b066b76094fa82ebd0a380"
+  },
+  "probeSet": {
+    "version": "0.1.0-phase0",
+    "hash": "sha256:18c0a4ed381cc177df3e9a1fda64fd9b86b3c581cd645179fc02a0fe1a4ba5a7"
+  },
+  "requestTemplate": {
+    "model": "deepseek-flash",
+    "messages": [
+      {
+        "role": "user",
+        "content": "<probe.prompt>"
+      }
+    ],
+    "max_tokens": "<probe.maxTokens>",
+    "params": "probe.params（thinking.type=disabled、temperature=0、stream=false）"
+  },
+  "probes": [
+    {
+      "probeId": "t-ascii",
+      "promptTokens": 18,
+      "fullVocabularyTokens": 18
+    },
+    {
+      "probeId": "t-cjk",
+      "promptTokens": 17,
+      "fullVocabularyTokens": 17
+    },
+    {
+      "probeId": "t-rare",
+      "promptTokens": 17,
+      "fullVocabularyTokens": 17
+    },
+    {
+      "probeId": "t-special",
+      "promptTokens": 39,
+      "fullVocabularyTokens": 29
+    },
+    {
+      "probeId": "t-unicode",
+      "promptTokens": 16,
+      "fullVocabularyTokens": 16
+    }
+  ],
+  "vector": [
+    18,
+    17,
+    17,
+    39,
+    16
+  ],
+  "provenance": {
+    "generatedBy": "scripts/build-tokenizer-reference.py",
+    "python": "3.14.4",
+    "platform": "linux-x86_64"
+  }
+}

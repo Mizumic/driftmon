@@ -7,6 +7,7 @@
 //   report           把判定渲染成人可读报告 → results/reports
 //   status           看一下配置、探针组、插件依赖、数据现状
 //   probe-set hash   打印冻结探针组的哈希（改探针前先跑一下）
+//   reference check  T 通道与官方 tokenizer 参考工件核对 → results/reference
 
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -21,6 +22,8 @@ import {
   readJsonFile,
   reportFileFor,
   templateFileFor,
+  tokenizerCheckFileFor,
+  tokenizerReferenceFileFor,
   watchFileFor,
   writeJsonAtomic,
 } from './paths.mjs'
@@ -33,6 +36,12 @@ import { judge } from './judge.mjs'
 import { renderReport, writeReport } from './report.mjs'
 import { buildCheckpointTemplate, templateSummary, validateTemplate } from './template.mjs'
 import { buildWatchAlert, compareToTemplate } from './gray.mjs'
+import {
+  compareToTokenizerReference,
+  tokenizerCheckIcon,
+  tokenizerReferenceSummary,
+  validateTokenizerReference,
+} from './tokenizer-reference.mjs'
 
 const VERSION = '0.1.0'
 
@@ -48,6 +57,7 @@ const HELP = `driftmon ${VERSION} · 后端漂移监测（设计文档见 driftm
   driftmon report [--provider P] [--model M]
   driftmon template build --fingerprint <32hex> [--name <检查点名>] [--since <时间>]
   driftmon template check [--template <file>] [--window <批数>]
+  driftmon reference check [--window <批数>] [--reference <file>] [--json] [--no-write]
 
 全局参数：
   --config <path>   配置文件（默认 driftmon/config.json，其次内置默认）
@@ -58,6 +68,9 @@ const HELP = `driftmon ${VERSION} · 后端漂移监测（设计文档见 driftm
   * baseline noise-floor 汇总 Phase 0 标定窗口的自然波动（按端点/通道），写 data/baselines/noise-floor.json；
   * template build 用原始层里「指纹匹配」的完整批次固化某检查点的行为向量模板（不联网）；
   * template check 把最新窗口的批次对模板比较，写一份通用告警文件 results/watch/gray-watch.json；
+  * reference check 用官方 tokenizer 参考工件（data/reference/official-tokenizer-v41.json）核对窗口内
+    T 向量——参考值由 deepseek-recipe + 官方 v41 tokenizer 离线生成，不联网、不花 token，
+    见 docs/TOKENIZER-REFERENCE.md；
   * 主动监测默认不随插件启动，需要显式跑这个 CLI（见 docs/DEPENDENCY.md 的分工）；
   * 从 dsh-system-fingerprint 只读 $DSH_HOME/storages/system-fingerprint/ 下的 endpoints.json（必需）
     与 config.json（可选，provider/检查点的只读导出）；不 import 插件代码。
@@ -159,6 +172,26 @@ async function commandStatus (flags) {
     const stale = baseline.probeSetHash !== probeSetHash
     console.log(`基线：version ${baseline.baselineVersion} · ${baseline.window.batches} 批 / ${baseline.window.samples} 样本 · 端点 ${Object.keys(baseline.endpoints).length} 个${stale ? ' · ⚠ 探针组已换版，需要重建' : ''}`)
     console.log(`  通道：${channelNamesOf(baseline).join(', ') || '—'}`)
+  }
+
+  // 官方 tokenizer 参考（T 通道绝对参照；可选工件，缺失不影响其它命令）。
+  const reference = await readJsonFile(tokenizerReferenceFileFor(paths), null)
+  console.log('')
+  console.log('官方 T 参照（deepseek-recipe + v41 tokenizer）：')
+  if (reference === null) {
+    console.log('  无工件（可选；生成方式见 docs/TOKENIZER-REFERENCE.md）')
+  } else {
+    const problems = validateTokenizerReference(reference, { probeSetHash, probes: probeSet.probes })
+    for (const line of tokenizerReferenceSummary(reference)) console.log(`  ${line}`)
+    if (problems.length > 0) {
+      console.log(`  ⚠ 工件不可用：${problems[0]}`)
+    } else {
+      const lastCheck = await readJsonFile(tokenizerCheckFileFor(paths), null)
+      const recent = lastCheck === null
+        ? '未核对（跑 driftmon reference check）'
+        : `${lastCheck.status} · ${lastCheck.provider ?? '?'}/${lastCheck.model ?? '?'} · ${formatTime(lastCheck.at)}`
+      console.log(`  最近核对：${recent}`)
+    }
   }
 }
 
@@ -437,7 +470,69 @@ async function commandTemplateCheck (flags) {
   console.log(`  窗口：${compared.window.batches} 批 / ${compared.window.samples} 样本（最近 ${window} 批）`)
   for (const item of compared.signals) console.log(`  · ${item.channel}（${item.verdict}）：${item.detail}`)
   for (const caveat of compared.caveats) console.log(`  ⚠ ${caveat}`)
+  // 可选：同一窗口对官方 tokenizer 参考工件再核对一次（没有工件/工件不合法就跳过，不影响模板判定）。
+  try {
+    const reference = await readJsonFile(tokenizerReferenceFileFor(paths), null)
+    if (reference !== null && validateTokenizerReference(reference, { probeSetHash, probes: probeSet.probes }).length === 0) {
+      const refCompared = compareToTokenizerReference({
+        batches,
+        probes: probeSet.probes,
+        reference,
+        provider: config.provider.id,
+        model: config.provider.model,
+        windowBatches: window,
+      })
+      console.log(`  官方 T 参照：${tokenizerCheckIcon(refCompared.status)} ${refCompared.status}（${refCompared.detail}）`)
+    }
+  } catch {
+    // 参考工件是可选增强，读失败不影响模板核对
+  }
   console.log(`已写入：${outFile}`)
+}
+
+/**
+ * T 通道核验：把窗口内实测 T 向量与官方参考工件（deepseek-recipe + v41 tokenizer 离线生成）比对。
+ * 不联网、不花 token；只回答「tokenizer / prompt 模板 / 请求渲染路径是否仍与官方参考一致」，
+ * 不代表权重没变（权重相关的漂移看 judge / template check）。
+ */
+async function commandReferenceCheck (flags) {
+  const { config, paths } = await contextOf(flags)
+  const { probeSet, probeSetHash } = await loadedProbes(paths)
+  const referenceFile = flags.reference === undefined ? tokenizerReferenceFileFor(paths) : resolve(String(flags.reference))
+  const reference = await readJsonFile(referenceFile, null)
+  if (reference === null) {
+    throw new Error(`没有官方 tokenizer 参考工件：${referenceFile}；生成方式见 docs/TOKENIZER-REFERENCE.md`)
+  }
+  const problems = validateTokenizerReference(reference, { probeSetHash, probes: probeSet.probes })
+  if (problems.length > 0) throw new Error(`参考工件自检失败：${problems.join('；')}`)
+  const batches = await readAllRawBatches(paths)
+  const window = numberFlag(flags, 'window') ?? config.collect.sessions
+  const compared = compareToTokenizerReference({
+    batches,
+    probes: probeSet.probes,
+    reference,
+    provider: config.provider.id,
+    model: config.provider.model,
+    windowBatches: window,
+  })
+  const record = { ...compared, provider: config.provider.id, model: config.provider.model, referenceFile }
+  const outFile = flags.out !== undefined ? resolve(String(flags.out)) : tokenizerCheckFileFor(paths)
+  if (flags['no-write'] !== true) await writeJsonAtomic(outFile, record)
+
+  if (flags.json === true) {
+    console.log(JSON.stringify(record, null, 2))
+    return
+  }
+  console.log(`${tokenizerCheckIcon(compared.status)} tokenizer-reference ${compared.status} · ${config.provider.id}/${config.provider.model}`)
+  console.log(`  ${compared.detail}`)
+  for (const line of tokenizerReferenceSummary(reference)) console.log(`  ${line}`)
+  const range = compared.window.from === null ? '' : `（${formatTime(compared.window.from)} → ${formatTime(compared.window.to)}）`
+  console.log(`  窗口：${compared.window.batches} 批${range}${compared.observed.skipped > 0 ? ` · 跳过 ${compared.observed.skipped} 批无 T 数据` : ''}`)
+  if (compared.observed.vectors.length > 1) {
+    console.log(`  观测到的 T 向量：${compared.observed.vectors.map((vector) => JSON.stringify(vector)).join(' / ')}`)
+  }
+  for (const diff of compared.diffs) console.log(`  · ${diff.probeId}：期望 ${diff.expected}，实测 ${diff.observed}`)
+  if (flags['no-write'] !== true) console.log(`已写入：${outFile}`)
 }
 
 function iconOf (verdict) {
@@ -471,6 +566,7 @@ export async function main (argv) {
     if (command === 'report') return await commandReport(flags).then(() => 0)
     if (command === 'template' && subcommand === 'build') return await commandTemplateBuild(flags).then(() => 0)
     if (command === 'template' && subcommand === 'check') return await commandTemplateCheck(flags).then(() => 0)
+    if (command === 'reference' && subcommand === 'check') return await commandReferenceCheck(flags).then(() => 0)
     console.error(`未知命令：${positional.join(' ')}\n`)
     console.log(HELP)
     return 1

@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/Mizumic/driftmon/actions/workflows/ci.yml/badge.svg)](https://github.com/Mizumic/driftmon/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933.svg)](package.json)
-[![Tests](https://img.shields.io/badge/tests-71%20passing-brightgreen.svg)](#开发与测试)
+[![Tests](https://img.shields.io/badge/tests-77%20passing-brightgreen.svg)](#开发与测试)
 [![Phase](https://img.shields.io/badge/phase%200-calibrated-brightgreen.svg)](#当前状态与已知限制)
 
 **当前状态**：Phase 0/1 骨架已实现（采集 / 签名 / 基线 / 判定 / 报告 + 离线测试）；
@@ -14,6 +14,9 @@
 判定阈值已按噪声底校准（L drop 0.10、S ratio 2.5；见 [`docs/EVIDENCE.md`](docs/EVIDENCE.md) E10）。
 2026-10-20 起有了**已知检查点行为模板**（`data/templates/`，官方 flash 1017 已固化），
 作为灰度检测与「无指纹网关反推检查点」的参考物（尚未接进 `judge`）。
+同日加入 **T 通道官方参照**：用官方 `deepseek-recipe` + v41 tokenizer 离线算出期望 T 向量并入库，
+`flash 1017` 模板的 T 向量 `[18,17,17,39,16]` 已与官方参考实现逐项一致（见
+[`docs/TOKENIZER-REFERENCE.md`](docs/TOKENIZER-REFERENCE.md) 与 E11）。
 
 ## 目录
 
@@ -23,6 +26,7 @@
 - [快速开始](#快速开始)
 - [配置](#配置)
 - [已知检查点模板](#已知检查点模板灰度检测的参考物)
+- [T 通道官方参照](#t-通道官方参照tokenizer-reference)
 - [告警合并到展示层](#告警合并到展示层)
 - [数据与目录约定](#数据与目录约定四层分离)
 - [怎么读这套文档](#怎么读这套文档)
@@ -54,6 +58,7 @@
 | Node.js | `>= 20` | 纯 Node 实现，**零运行时依赖**（只用内建模块） |
 | API key（采集时才需要） | 环境变量 | 例如 `OPENCODE_API_KEY` / `DEEPSEEK_API_KEY`；**只走环境变量，不写进配置文件** |
 | 被动层插件（可选） | [`dsh-system-fingerprint`](https://github.com/Mizumic/dsh-system-fingerprint) | 只读它的产物做交叉引用；不装也能采集/判定 |
+| 开发机重建 T 参照（可选） | Python 3.10+ + `deepseek-recipe==0.2.0` | 只给 `scripts/build-tokenizer-reference.py` 用；**不进入运行时**，日常跑 `reference check` 不需要 Python |
 
 ## DSH 版本声明
 
@@ -78,8 +83,8 @@ driftmon **不依赖 DSH 版本**：它是独立 CLI（纯 Node、零运行时�
 ```bash
 git clone https://github.com/Mizumic/driftmon.git
 cd driftmon
-npm test                                  # 71 项离线测试，不联网
-node bin/driftmon.mjs status              # 配置 / 探针组哈希 / 插件依赖 / 数据现状
+npm test                                  # 77 项离线测试，不联网
+node bin/driftmon.mjs status              # 配置 / 探针组哈希 / 插件依赖 / 数据现状 / T 参照
 
 export OPENCODE_API_KEY=...               # key 只走环境变量，不写配置文件
 node bin/driftmon.mjs collect --sessions 1 --only T,L,G,S   # 冒烟：partial 批次，不进判定
@@ -93,6 +98,10 @@ node bin/driftmon.mjs report              # 人可读报告 → results/reports
 # 已知检查点的行为模板（官方端点用 system_fingerprint 认定检查点后固化；见 data/templates/）
 node bin/driftmon.mjs template build --fingerprint <官方 system_fingerprint> --name "flash 1017"
 node bin/driftmon.mjs template check          # 最新窗口对模板比较 → results/watch/gray-watch.json
+
+# T 通道官方参照（离线工件；不联网、不花 token；见 docs/TOKENIZER-REFERENCE.md）
+node bin/driftmon.mjs reference check     # 实测 T 向量 vs 官方参考 → results/reference/tokenizer-check.json
+node scripts/check-upstream.mjs           # 上游 deepseek-recipe / DeepInfer 是否有更新（可选）
 ```
 
 ## 配置
@@ -132,6 +141,31 @@ L top-k 中位 0.819、C 命中 0.889、TTFT 中位 117ms；L 的 logprob 数值
 > 判定阈值已按 Phase 0 噪声底校准（L 0.10 / S 2.5，见 E10），灰度阈值（`gray.thresholds`）
 > 复核后保留默认值。灰度是否可测取决于它是否改变这些可测量分布。
 
+## T 通道官方参照（tokenizer reference）
+
+T 通道原来只能「跟自己的历史基线比」：如果第一次采集时链路就已经被换过，就永远发现不了。
+2026-10-20 官方开源 [`deepseek-recipe`](https://github.com/deepseek-ai/deepseek-recipe)（生产级
+Token 编解码组件，官方称其处理逻辑与 DeepSeek 官方 API 完整对齐）后，我们可以**离线**算出冻结
+探针组的期望 `prompt_tokens`，作为**绝对参照**。
+
+已固化：`data/reference/official-tokenizer-v41.json`（`deepseek-recipe` 0.2.0 + 自带 v41 tokenizer，
+tokenizer 内容由 SHA-256 锁定）。实测 5 条 T 探针全部精确对上：
+
+| 探针 | 官方参考实现期望 | 官方端点实测（E9/E10，240/240 批） |
+| --- | ---: | ---: |
+| `t-ascii` / `t-cjk` / `t-rare` / `t-special` / `t-unicode` | 18 / 17 / 17 / 39 / 16 | 18 / 17 / 17 / 39 / 16 |
+
+即 **`flash 1017` 模板的 T 向量有官方实现背书**，不只是「我们自己观测到它稳定」。
+
+```bash
+node bin/driftmon.mjs reference check   # 实测窗口 vs 官方参考 → results/reference/tokenizer-check.json
+```
+
+`match` 表示 tokenizer / prompt 模板 / 请求渲染路径与官方参考一致（**不代表权重没变**）；
+`mismatch` 会给出逐探针差异，按 [`docs/TOKENIZER-REFERENCE.md`](docs/TOKENIZER-REFERENCE.md) §3
+排查（tokenizer 换版 / 模板变化 / 网关改写 prompt），不要直接当模型漂移。
+工件生成、刷新纪律与上游更新关注见同一份文档；上游更新可用 `node scripts/check-upstream.mjs` 检查。
+
 ## 告警合并到展示层
 
 `template check` 写 `results/watch/gray-watch.json`（通用 schema v1，不绑定具体宿主）。
@@ -155,6 +189,7 @@ driftmon/
 │   ├── DESIGN.md          ← 设计文档：目标、边界、架构、判定规则、开放问题
 │   ├── PREREQUISITES.md   ← 前置知识：实测得到的硬事实与陷阱（写实现前必须读）
 │   ├── DATA-MODEL.md      ← 四层数据结构的字段定义与不变量
+│   ├── TOKENIZER-REFERENCE.md ← T 通道官方参照：工件、重建流程、上游更新关注
 │   ├── DEPENDENCY.md      ← 与 dsh-system-fingerprint 的两仓库依赖契约
 │   └── ROADMAP.md         ← 阶段划分与验收标准
 ├── probes/                ← ② 配置层：探针组的定义（数据，不是代码）
@@ -166,11 +201,14 @@ driftmon/
 ├── data/                  ← ④ 原始数据层：append-only，不删不改
 │   ├── raw/               ← 每次采样的原始输出（数值摘要 + 端点溯源 + 官方 system_fingerprint；不存 prompt / 响应正文）
 │   ├── baselines/         ← 滚动基线：每通道的分布统计
-│   └── templates/         ← 已知检查点行为模板（派生参考：T/L/G/C/S 签名；从 raw 重建）
+│   ├── templates/         ← 已知检查点行为模板（派生参考：T/L/G/C/S 签名；从 raw 重建）
+│   └── reference/         ← 官方 tokenizer 参考工件（入库；离线算出的期望 T 向量，人工评审后更新）
 ├── results/               ← ⑤ 判定层：结论（人可读报告 + 机器可读告警）
 │   ├── reports/
 │   ├── alerts/
-│   └── watch/             ← 行为告警（模板对比 → gray-watch.json，可被展示层读取）
+│   ├── watch/             ← 行为告警（模板对比 → gray-watch.json，可被展示层读取）
+│   └── reference/         ← T 通道核验结果（tokenizer-check.json，可重建）
+├── scripts/               ← 采集/标定/核验/上游检查脚本（含 dev-only Python 参考工件生成器）
 └── test/                  ← 离线测试（node:test；桩 fetch，不联网）
 ```
 
@@ -181,9 +219,9 @@ driftmon/
 重跑一次就把上次扫描的成果冲掉了（那轮新发现 17 个、登记表总数 19）。教训是**原始观测、派生摘要、判定结论必须分开存**：
 前者不可再生，后者随时可重算。driftmon 把这条当硬约束。
 
-**数据不入库**：`data/raw/*.jsonl`、`data/baselines/*.json`、`results/alerts|watch|reports/*`
-都是本机生成物（见 `.gitignore`），随用随弃、可重算；入库的是探针定义、模板、文档与代码。
-`data/raw/2026-10-17-transcripts/` 是早期人工转录，用于追溯实测结论的来源，**不是**机器产物。
+**数据不入库**：`data/raw/*.jsonl`、`data/baselines/*.json`、`results/alerts|watch|reports|reference/*`
+都是本机生成物（见 `.gitignore`），随用随弃、可重算；入库的是探针定义、模板、官方 tokenizer
+参考工件、文档与代码。`data/raw/2026-10-17-transcripts/` 是早期人工转录，用于追溯实测结论的来源，**不是**机器产物。
 
 ## 怎么读这套文档
 
@@ -194,7 +232,8 @@ driftmon/
 | **跑 / 复核 Phase 0 噪声标定** | [`docs/PHASE0-PLAN.md`](docs/PHASE0-PLAN.md)（runbook + 2026-10-20 已完成记录：成本/时间、采集脚本、noise-floor、阈值 review） |
 | 决定要不要做、做成什么样 | [`docs/DESIGN.md`](docs/DESIGN.md) |
 | 动手改代码之前 | [`docs/PREREQUISITES.md`](docs/PREREQUISITES.md)（**必读**，全是实测结论和坑） |
-| **想知道文档里的数字是哪来的** | [`docs/EVIDENCE.md`](docs/EVIDENCE.md)（证据索引：脚本 / 产物 / 复现命令 / 可信度） |
+| **想知道文档里的数字是哪来的** | [`docs/EVIDENCE.md`](docs/EVIDENCE.md)（证据索引：脚本 / 产物 / 复现命令 / 可信度；E11 = T 向量的官方参照） |
+| **想核对 T 通道是否还和官方 tokenizer/模板一致** | [`docs/TOKENIZER-REFERENCE.md`](docs/TOKENIZER-REFERENCE.md)（工件、`reference check`、重建与刷新纪律、上游更新关注） |
 | 想知道两个仓库怎么放、接口是什么 | [`docs/DEPENDENCY.md`](docs/DEPENDENCY.md) |
 | 设计数据结构 / 改字段 | [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) |
 | 想知道先做什么、做到什么算完成 | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
@@ -218,6 +257,8 @@ driftmon/
 
 * **它是观测，不是断言**：只能告诉你「某个可测量的东西变了」，说不出「变成了什么」。
 * **供应商不改指纹又只换权重、不换 tokenizer 时，各通道都很弱**，此时只有统计置信度。
+* **T 官方参照只覆盖 T 通道**：`reference check` 的 `match` 只说明 tokenizer / prompt 模板与官方参考
+  一致，**不代表权重没变**；权重漂移看 `judge` / `template check` 的 L/G 通道。
 * **不做内容质量评测**：任务正确性、风格、工具调用能力属于另一件事，不在这里。
 * **不存 prompt / 响应正文**：只存数值摘要与（脱敏后的）响应头。
 * **主动监测不默认常驻**：插件不会自动跑它；要采就显式跑 CLI（cron / systemd / 手动）。
@@ -225,8 +266,9 @@ driftmon/
 ## 开发与测试
 
 ```bash
-npm test                     # 71 项离线测试（node --test；桩 fetch，不联网）
+npm test                     # 77 项离线测试（node --test；桩 fetch，不联网）
 npm run status               # 等价于 node bin/driftmon.mjs status
+npm run upstream:check       # 检查上游 deepseek-recipe / DeepInfer 是否有更新（联网，可选）
 node bin/driftmon.mjs probe-set hash   # 查看冻结探针组哈希
 ```
 
@@ -237,6 +279,8 @@ node bin/driftmon.mjs probe-set hash   # 查看冻结探针组哈希
   template / alert / report）随时可从原始层重算。
 * **证据先落盘**：任何产生文档数字的探测都必须由脚本写出文件，禁止「只 print」和一次性内联脚本
   （见 [`docs/EVIDENCE.md`](docs/EVIDENCE.md)）。
+* **T 参照工件只经人工评审更新**：`data/reference/official-tokenizer-v41.json` 由
+  `scripts/build-tokenizer-reference.py` 生成候选、人工 review 后替换；运行时只读，不联网。
 * **探针组冻结**：改 `probes/` 必须 bump `probeSetVersion`，并重建基线/模板；`probeSetHash`
   不一致时拒绝比较。
 * **key 不进代码/配置/日志**：只从环境变量读。
@@ -252,6 +296,10 @@ node bin/driftmon.mjs probe-set hash   # 查看冻结探针组哈希
 * L 通道存在小时级非平稳性：同指纹下 top-k Jaccard 在 0.786↔0.923 模式间漂移（G/C/T 恒定），
   已按滚动基线计入噪声阈值，跨天/跨时段表现需复核（见 `docs/EVIDENCE.md` 待补）。
 * 行为模板 ≠ 版本识别：模板只能回答「行为是否偏离已知检查点」，不能证明具体版本。
+* **T 通道官方参照（2026-10-20）**：`data/reference/official-tokenizer-v41.json` 的期望 T 向量
+  `[18,17,17,39,16]` 与 `deepseek-recipe` 0.2.0 + v41 tokenizer 的离线计算结果逐项一致，
+  `flash 1017` 模板的 T 向量有官方实现背书（E11）；`reference check` 可用于发现 tokenizer /
+  prompt 模板 / 请求渲染路径的变化。工件刷新需要人工 review，上游更新用 `npm run upstream:check` 检查。
 * 真实网关单会话冒烟已跑通；完整 5 轮官方巡检数据见 `docs/EVIDENCE.md`（E9），
   Phase 0 的 30 轮标定原始层在 `data/raw/2026-10-20.jsonl`（gitignored，240 批）。
 

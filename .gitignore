@@ -5,12 +5,14 @@ data/baselines/*.json
 results/alerts/*.json
 results/watch/*.json
 results/reports/*.md
+results/reference/*.json
 !data/raw/README.md
 !data/raw/2026-10-17-transcripts/
 !data/baselines/README.md
 !results/alerts/README.md
 !results/watch/README.md
 !results/reports/README.md
+!results/reference/README.md
 # 本机配置（含本机 DSH_HOME 路径或本地路由），入库的是 *.example.json
 config.json
 config.*.json
