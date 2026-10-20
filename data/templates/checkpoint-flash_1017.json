@@ -1,7 +1,7 @@
 {
   "version": 1,
   "kind": "known-checkpoint-template",
-  "generatedAt": 1792436258759,
+  "generatedAt": 1792492255089,
   "note": "已知检查点的行为签名参考（派生层，可从 data/raw 重建）；指纹来自官方 system_fingerprint。",
   "probeSet": {
     "version": "0.1.0-phase0",
@@ -369,5 +369,21 @@
       "S"
     ],
     "note": "指纹变了 = 官方配置变更（直接可见）；指纹不变但 behaviorChannels 分布偏移/双峰 = 疑似灰度。"
+  },
+  "officialReference": {
+    "package": "deepseek-recipe",
+    "version": "0.2.0",
+    "sourceCommit": "935817c66f5d6e64838f419692545f06787e485f",
+    "tokenizerSha256": "sha256:81f64d1248a68ce3663e07ab3ee48b851e5df0e32d27cb98e4c9a268151e8d99",
+    "probeSetHash": "sha256:18c0a4ed381cc177df3e9a1fda64fd9b86b3c581cd645179fc02a0fe1a4ba5a7",
+    "expectedVector": [
+      18,
+      17,
+      17,
+      39,
+      16
+    ],
+    "vectorMatch": true,
+    "checkedAt": 1792492255097
   }
 }

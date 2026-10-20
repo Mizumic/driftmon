@@ -14,6 +14,7 @@
 // 模板是派生层：从 append-only 原始层重建，随时可重算；不写原始层。
 
 import { channelAvailability, median, quantile, signatureOfBatch } from './signature.mjs'
+import { validateOfficialReferenceBlock } from './tokenizer-reference.mjs'
 
 export const TEMPLATE_VERSION = 1
 export const TEMPLATE_KIND = 'known-checkpoint-template'
@@ -251,6 +252,17 @@ export function buildCheckpointTemplate (options) {
   }
 }
 
+/**
+ * 把官方 tokenizer 参考的核验结论固化进模板（additive 字段 `officialReference`）。
+ *
+ * 为什么不重建整个模板：模板仍是原始层的纯派生；官方参照是**另一权威来源**的期望值，
+ * 以可选的附加块挂在模板上，`validateTemplate` 只在块存在时校验形状（旧模板仍然合法）。
+ * 构造块用 src/tokenizer-reference.mjs 的 buildOfficialReferenceBlock()。
+ */
+export function attachOfficialReference (template, block) {
+  return { ...template, officialReference: block }
+}
+
 /** 模板自检（CLI/测试共用；不依赖外部状态）。 */
 export function validateTemplate (template) {
   const problems = []
@@ -262,6 +274,11 @@ export function validateTemplate (template) {
   const t = template.channels?.T
   if (t?.available === true && (!Array.isArray(t.vector) || !t.vector.every(Number.isInteger))) problems.push('T.vector 必须是整数数组')
   if (!Number.isInteger(template.window?.batches) || template.window.batches <= 0) problems.push('window.batches 必须是正整数')
+  if (template.officialReference !== undefined) {
+    for (const problem of validateOfficialReferenceBlock(template.officialReference, { probeSetHash: template.probeSet?.hash })) {
+      problems.push(`officialReference：${problem}`)
+    }
+  }
   return problems
 }
 

@@ -109,6 +109,57 @@ export function referenceTVector (reference) {
   return Array.isArray(reference?.vector) ? reference.vector : null
 }
 
+/**
+ * 构造写进检查点模板的 `officialReference` 块（把核验结论固化进「指纹」工件）。
+ * 纯函数；调用方负责先用 validateTokenizerReference() 校验工件。
+ *
+ * @param {object} options
+ * @param {object} options.reference - 官方 tokenizer 参考工件
+ * @param {number[]|null} [options.tVector] - 模板/窗口的 T 向量（无 T 数据时传 null）
+ * @param {number} [options.now]
+ */
+export function buildOfficialReferenceBlock (options) {
+  const expectedVector = referenceTVector(options.reference)
+  if (expectedVector === null) throw new Error('参考工件缺 vector，不能固化进模板')
+  const reference = options.reference
+  return {
+    package: reference.referenceImplementation?.package ?? null,
+    version: reference.referenceImplementation?.version ?? null,
+    sourceCommit: reference.referenceImplementation?.sourceCommit ?? null,
+    tokenizerSha256: reference.tokenizer?.sha256 ?? null,
+    probeSetHash: reference.probeSet?.hash ?? null,
+    expectedVector,
+    /** 模板 T 向量是否等于官方期望；模板没有 T 数据时为 null（不是 false）。 */
+    vectorMatch: Array.isArray(options.tVector)
+      ? JSON.stringify(options.tVector) === JSON.stringify(expectedVector)
+      : null,
+    checkedAt: options.now ?? Date.now(),
+  }
+}
+
+/**
+ * 校验模板里的 `officialReference` 块（模板自检用）。返回问题列表。
+ * @param {object} block
+ * @param {{probeSetHash?: string}} [options]
+ */
+export function validateOfficialReferenceBlock (block, options = {}) {
+  const problems = []
+  if (!isObject(block)) return ['不是对象']
+  for (const key of ['package', 'version', 'sourceCommit', 'tokenizerSha256', 'probeSetHash']) {
+    if (typeof block[key] !== 'string' || block[key].length === 0) problems.push(`缺 ${key}`)
+  }
+  if (typeof block.tokenizerSha256 === 'string' && block.tokenizerSha256.length > 0 && !/^sha256:[0-9a-f]{64}$/u.test(block.tokenizerSha256)) {
+    problems.push('tokenizerSha256 必须是 sha256:<64hex>')
+  }
+  if (!isPositiveIntegerArray(block.expectedVector)) problems.push('expectedVector 必须是非空正整数数组')
+  if (!(block.vectorMatch === null || typeof block.vectorMatch === 'boolean')) problems.push('vectorMatch 必须是布尔值或 null')
+  if (!Number.isFinite(block.checkedAt)) problems.push('checkedAt 必须是时间戳')
+  if (options.probeSetHash !== undefined && block.probeSetHash !== options.probeSetHash) {
+    problems.push(`probeSetHash=${block.probeSetHash} 与模板 ${options.probeSetHash} 不一致（换过探针组必须重建工件/模板）`)
+  }
+  return problems
+}
+
 function usableBatches (batches, reference, provider, model) {
   return (Array.isArray(batches) ? batches : []).filter((batch) => {
     if (!isObject(batch) || batch.partial === true) return false

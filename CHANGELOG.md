@@ -24,6 +24,13 @@
   中与判定相关的官方事实（默认 checkpoint 身份、batch-invariant 与确定性、跨平台数值差异、
   会改变行为但不改权重的开关清单、YoCo 截断、KV cache 语义、V4/V4.1 能力差异）映射到本项目的
   通道与归因逻辑；**明确不运行 DeepInfer、不作运行时依赖**。
+- **T 核验结论固化进检查点模板（2026-10-20）**：`template build` 把官方参照的核验结果写入模板的
+  `officialReference` 块（`package` / `version` / `sourceCommit` / `tokenizerSha256` / `probeSetHash` /
+  `expectedVector` / `vectorMatch` / `checkedAt`）；`template check` 输出「模板记录 / 当前窗口」两行
+  核验状态。**不改 verdict、不改 `gray-watch.json` schema**；旧模板（无该块）仍合法；工件缺失或与
+  当前探针组不匹配时跳过该块、不阻断构建。新增 `template build --until` 用于圈定重建窗口；
+  `flash 1017` 模板已重建（窗口统计与 E9 **逐字段一致**，仅新增 `officialReference`，
+  `vectorMatch=true`）。测试 77 → **78 项**。
 - **Phase 0 阈值 review 回放工具**：`scripts/phase0-threshold-review.mjs`（只读、不联网、不写文件）——
   以「每条批次之前 30 批」为滚动基线回放原始层，统计 L drop / S ratio / G z / C drop 在各候选阈值下
   会触发多少批，供人工把判定阈值从默认值换成噪声底推导值；不参与判定链。

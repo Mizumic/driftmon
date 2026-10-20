@@ -73,6 +73,11 @@ T 通道（`usage.prompt_tokens` 向量）是唯一「单次测量、无采样�
   `template check` 在输出里追加一行官方 T 参照状态（没有工件时静默跳过）。
 * 测试：[`test/tokenizer-reference.test.mjs`](../test/tokenizer-reference.test.mjs)——把「官方背书」
   固化成回归断言（工件与模板 T 向量必须逐项一致、mismatch 逐探针 diff、CLI 端到端）。
+* **与检查点模板的关系（2026-10-20 起）**：`template build` 会把核验结论固化进模板工件
+  `data/templates/checkpoint-*.json` 的 `officialReference` 块（期望向量 + 来源版本 + `vectorMatch`）；
+  `template check` 输出「模板记录 / 当前窗口」两行核验状态。**参照工件仍独立存放**（权威来源分离），
+  模板只是引用它的结论；`reference check` 保留为诊断命令。刷新顺序：先复核/替换工件，再重跑
+  `template build`（可用 `--since/--until` 复现原窗口）。
 
 ```bash
 node bin/driftmon.mjs reference check --config config.official-deepseek.example.json

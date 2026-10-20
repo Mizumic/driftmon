@@ -35,9 +35,12 @@ import { buildNoiseFloor, noiseFloorSummary } from './noise-floor.mjs'
 import { judge } from './judge.mjs'
 import { renderReport, writeReport } from './report.mjs'
 import { buildCheckpointTemplate, templateSummary, validateTemplate } from './template.mjs'
+import { attachOfficialReference } from './template.mjs'
 import { buildWatchAlert, compareToTemplate } from './gray.mjs'
 import {
+  buildOfficialReferenceBlock,
   compareToTokenizerReference,
+  referenceTVector,
   tokenizerCheckIcon,
   tokenizerReferenceSummary,
   validateTokenizerReference,
@@ -55,7 +58,7 @@ const HELP = `driftmon ${VERSION} · 后端漂移监测（设计文档见 driftm
   driftmon baseline noise-floor [--rounds 30] [--since <时间>] [--provider P] [--model M]
   driftmon judge run [--provider P] [--model M] [--json]
   driftmon report [--provider P] [--model M]
-  driftmon template build --fingerprint <32hex> [--name <检查点名>] [--since <时间>]
+  driftmon template build --fingerprint <32hex> [--name <检查点名>] [--since <时间>] [--until <时间>]
   driftmon template check [--template <file>] [--window <批数>]
   driftmon reference check [--window <批数>] [--reference <file>] [--json] [--no-write]
 
@@ -66,7 +69,8 @@ const HELP = `driftmon ${VERSION} · 后端漂移监测（设计文档见 driftm
 说明：
   * collect 会真的花钱（默认 K=8 × 冻结探针组 ≈ 46k token/轮），--dry-run 只打印第一个请求；
   * baseline noise-floor 汇总 Phase 0 标定窗口的自然波动（按端点/通道），写 data/baselines/noise-floor.json；
-  * template build 用原始层里「指纹匹配」的完整批次固化某检查点的行为向量模板（不联网）；
+  * template build 用原始层里「指纹匹配」的完整批次固化某检查点的行为向量模板（不联网；
+    可用 --since/--until 圈定窗口），并把官方 tokenizer 参照的核验结论固化进 officialReference 块；
   * template check 把最新窗口的批次对模板比较，写一份通用告警文件 results/watch/gray-watch.json；
   * reference check 用官方 tokenizer 参考工件（data/reference/official-tokenizer-v41.json）核对窗口内
     T 向量——参考值由 deepseek-recipe + 官方 v41 tokenizer 离线生成，不联网、不花 token，
@@ -363,13 +367,14 @@ async function commandTemplateBuild (flags) {
   }
   const batches = await readAllRawBatches(paths)
   const since = sinceFlag(flags)
+  const until = timeFlag(flags, 'until')
   // 只取当前 provider/model 的批次：不同路由的同名模型不能混进一个模板。
-  const scoped = batches.filter((batch) => batch.provider === config.provider.id && batch.model === config.provider.model && (since === undefined || (batch.at ?? 0) >= since))
+  const scoped = batches.filter((batch) => batch.provider === config.provider.id && batch.model === config.provider.model && (since === undefined || (batch.at ?? 0) >= since) && (until === undefined || (batch.at ?? 0) <= until))
   // 检查点名：--name 优先；否则查插件只读配置里的映射表（缺失就留空）。
   const exported = await loadPluginConfig(pluginStorageDir(config))
   const known = exported.found ? exported.checkpoints.find((entry) => entry.fingerprint === fingerprint) : undefined
   const name = typeof flags.name === 'string' ? flags.name : (known?.name ?? undefined)
-  const template = buildCheckpointTemplate({
+  let template = buildCheckpointTemplate({
     batches: scoped,
     probes: probeSet.probes,
     probeSetHash,
@@ -377,6 +382,25 @@ async function commandTemplateBuild (flags) {
     checkpoint: { fingerprint, name },
     provider: { id: config.provider.id, baseURL: config.provider.baseURL, model: config.provider.model },
   })
+  // 把「T 通道与官方参考实现是否一致」的核验结论固化进模板（指纹工件的一部分）。
+  // 参考工件可选/可缺：缺失或与当前探针组不匹配时跳过，不阻断模板构建。
+  const reference = await readJsonFile(tokenizerReferenceFileFor(paths), null)
+  if (reference === null) {
+    console.log('官方 T 参照：无工件（可选；见 docs/TOKENIZER-REFERENCE.md），模板不附 officialReference')
+  } else {
+    const referenceProblems = validateTokenizerReference(reference, { probeSetHash, probes: probeSet.probes })
+    if (referenceProblems.length > 0) {
+      console.log(`⚠ 官方 T 参照工件不可用，模板不附 officialReference：${referenceProblems[0]}`)
+    } else {
+      const block = buildOfficialReferenceBlock({
+        reference,
+        tVector: template.channels.T.available === true ? template.channels.T.vector : null,
+      })
+      template = attachOfficialReference(template, block)
+      const icon = block.vectorMatch === true ? '🟢 match' : block.vectorMatch === false ? '🔴 mismatch' : '⚪ 无 T 数据'
+      console.log(`官方 T 参照：${icon} · ${block.package} ${block.version} · tokenizer ${String(block.tokenizerSha256).slice(7, 19)}…`)
+    }
+  }
   const problems = validateTemplate(template)
   if (problems.length > 0) throw new Error(`模板自检失败：${problems.join('；')}`)
   const file = templateFileFor(paths, template.checkpoint.name ?? fingerprint.slice(0, 12))
@@ -389,15 +413,19 @@ async function commandTemplateBuild (flags) {
   if (template.window.batches < 2) console.log('注意：只有 1 个批次样本，建议至少 2 批（K≥8 会话一轮）再当参考。')
 }
 
-function sinceFlag (flags) {
-  if (flags.since === undefined) return undefined
-  const text = String(flags.since).trim()
+function timeFlag (flags, name) {
+  if (flags[name] === undefined) return undefined
+  const text = String(flags[name]).trim()
   if (text === '') return undefined
   const numeric = Number(text)
   if (Number.isFinite(numeric) && numeric > 0) return numeric
   const parsed = Date.parse(text)
-  if (!Number.isFinite(parsed)) throw new Error(`--since 需要时间戳（毫秒）或可解析的日期，收到 ${text}`)
+  if (!Number.isFinite(parsed)) throw new Error(`--${name} 需要时间戳（毫秒）或可解析的日期，收到 ${text}`)
   return parsed
+}
+
+function sinceFlag (flags) {
+  return timeFlag(flags, 'since')
 }
 
 async function loadTemplateOrThrow (paths, flags, config) {
@@ -470,7 +498,16 @@ async function commandTemplateCheck (flags) {
   console.log(`  窗口：${compared.window.batches} 批 / ${compared.window.samples} 样本（最近 ${window} 批）`)
   for (const item of compared.signals) console.log(`  · ${item.channel}（${item.verdict}）：${item.detail}`)
   for (const caveat of compared.caveats) console.log(`  ⚠ ${caveat}`)
-  // 可选：同一窗口对官方 tokenizer 参考工件再核对一次（没有工件/工件不合法就跳过，不影响模板判定）。
+  // 官方 T 参照：先看模板里固化的核验结论（officialReference 块），再与当前参考工件比对。
+  // 只增提示，不改 verdict、不改 gray-watch schema（展示契约保持不变）。
+  if (template.officialReference !== undefined) {
+    const recorded = template.officialReference
+    const icon = recorded.vectorMatch === true ? '🟢 match' : recorded.vectorMatch === false ? '🔴 mismatch' : '⚪ 无 T 数据'
+    console.log(`  官方 T 参照（模板记录）：${icon} · ${recorded.package} ${recorded.version} · tokenizer ${String(recorded.tokenizerSha256).slice(7, 19)}…`)
+    if (recorded.vectorMatch === false) {
+      console.log('  ⚠ 模板 T 向量与官方参照不一致：该端点可能非官方实现，或模板需重评')
+    }
+  }
   try {
     const reference = await readJsonFile(tokenizerReferenceFileFor(paths), null)
     if (reference !== null && validateTokenizerReference(reference, { probeSetHash, probes: probeSet.probes }).length === 0) {
@@ -482,7 +519,13 @@ async function commandTemplateCheck (flags) {
         model: config.provider.model,
         windowBatches: window,
       })
-      console.log(`  官方 T 参照：${tokenizerCheckIcon(refCompared.status)} ${refCompared.status}（${refCompared.detail}）`)
+      console.log(`  官方 T 参照（当前窗口）：${tokenizerCheckIcon(refCompared.status)} ${refCompared.status}（${refCompared.detail}）`)
+      if (template.officialReference !== undefined) {
+        const currentExpected = referenceTVector(reference)
+        if (currentExpected !== null && JSON.stringify(currentExpected) !== JSON.stringify(template.officialReference.expectedVector)) {
+          console.log('  ⚠ 官方 T 参考工件已更新（与模板记录不同）：按 docs/TOKENIZER-REFERENCE.md §4 重评并重建模板')
+        }
+      }
     }
   } catch {
     // 参考工件是可选增强，读失败不影响模板核对

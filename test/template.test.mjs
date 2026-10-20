@@ -1,7 +1,7 @@
 // driftmon · 已知检查点模板（纯函数 + CLI 端到端，不联网）
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { appendRawBatch, rawFileFor } from '../src/paths.mjs'
@@ -9,15 +9,20 @@ import { main } from '../src/cli.mjs'
 import {
   TEMPLATE_KIND,
   TEMPLATE_VERSION,
+  attachOfficialReference,
   batchFingerprint,
   buildCheckpointTemplate,
   validateTemplate,
 } from '../src/template.mjs'
+import { buildOfficialReferenceBlock } from '../src/tokenizer-reference.mjs'
 import { TEST_HASH, TEST_PROBES_DIR, makeStableBatches } from './helpers.mjs'
 import { loadProbeSet } from '../src/probe-set.mjs'
 
 const { probeSet, probeSetHash } = await loadProbeSet(TEST_PROBES_DIR)
 const FP = 'e72d3c7f663d3e1383b00b3884cb4501'
+const REFERENCE = JSON.parse(
+  await readFile(new URL('../data/reference/official-tokenizer-v41.json', import.meta.url), 'utf8')
+)
 
 /** 给批次里的非流式样本挂上官方 system_fingerprint；每个批次换一个 session，统计更真实。 */
 function withFingerprint (batches, fingerprint = FP) {
@@ -131,6 +136,31 @@ test('validateTemplate：坏模板要报出问题', () => {
   assert.ok(problems.length >= 3, `应报多处问题：${JSON.stringify(problems)}`)
 })
 
+test('模板固化官方参照：officialReference 可选、可校验，旧模板仍然合法', () => {
+  const batches = withFingerprint(makeStableBatches(probeSet.probes, 2, { probeSetHash, tVector: REFERENCE.vector }))
+  const template = build(batches)
+  assert.deepEqual(validateTemplate(template), [], '旧模板（无 officialReference）仍然合法')
+
+  const block = buildOfficialReferenceBlock({ reference: REFERENCE, tVector: template.channels.T.vector, now: 1792435200000 })
+  const attached = attachOfficialReference(template, block)
+  assert.deepEqual(validateTemplate(attached), [])
+  assert.equal(attached.officialReference.vectorMatch, true)
+  assert.deepEqual(attached.officialReference.expectedVector, REFERENCE.vector)
+  assert.equal(attached.officialReference.probeSetHash, probeSetHash)
+  assert.equal(attached.officialReference.package, 'deepseek-recipe')
+  assert.equal(attached.officialReference.checkedAt, 1792435200000)
+
+  // T 向量与官方期望不一致：模板仍然合法，但 vectorMatch=false（如实记录，不伪装成 match）。
+  const drifted = build(withFingerprint(makeStableBatches(probeSet.probes, 1, { probeSetHash, tVector: [18, 17, 17, 64, 16] })))
+  const driftAttached = attachOfficialReference(drifted, buildOfficialReferenceBlock({ reference: REFERENCE, tVector: drifted.channels.T.vector }))
+  assert.equal(driftAttached.officialReference.vectorMatch, false)
+  assert.deepEqual(validateTemplate(driftAttached), [])
+
+  // 换过探针组后，模板里固化的参照块必须被拒绝（防止旧参照混进新模板）。
+  const stale = attachOfficialReference(template, { ...block, probeSetHash: 'sha256:old-probe-set' })
+  assert.ok(validateTemplate(stale).some((problem) => problem.includes('officialReference')), validateTemplate(stale).join('\n'))
+})
+
 test('CLI：template build 从原始层生成并落盘（不联网）', async () => {
   const root = await mkdtemp(join(tmpdir(), 'driftmon-template-'))
   const paths = {
@@ -164,6 +194,10 @@ test('CLI：template build 从原始层生成并落盘（不联网）', async ()
     },
   }, null, 2), 'utf8')
 
+  // 参考工件也放进临时 data/ 目录：template build 应把核验结论固化进模板。
+  await mkdir(join(root, 'data', 'reference'), { recursive: true })
+  await writeFile(join(root, 'data', 'reference', 'official-tokenizer-v41.json'), JSON.stringify(REFERENCE), 'utf8')
+
   const originalLog = console.log
   const originalError = console.error
   const logs = []
@@ -184,6 +218,35 @@ test('CLI：template build 从原始层生成并落盘（不联网）', async ()
   assert.equal(template.checkpoint.name, 'flash 1017')
   assert.deepEqual(template.channels.T.vector, [18, 17, 17, 39, 16])
   assert.equal(template.window.batches, 3)
+  // 核验结论固化进模板工件（「指纹」本身带官方背书）。
+  assert.equal(template.officialReference.package, 'deepseek-recipe')
+  assert.equal(template.officialReference.version, REFERENCE.referenceImplementation.version)
+  assert.equal(template.officialReference.vectorMatch, true)
+  assert.deepEqual(template.officialReference.expectedVector, REFERENCE.vector)
+
+  // --until 圈定窗口：只保留到第二批次（重建模板时可复现原窗口）。
+  logs.length = 0
+  console.log = (...args) => logs.push(args.join(' '))
+  try {
+    const codeUntil = await main(['template', 'build', '--config', configFile, '--fingerprint', FP, '--name', 'flash 1017', '--until', String(batches[1].at)])
+    assert.equal(codeUntil, 0, logs.join('\n'))
+  } finally {
+    console.log = originalLog
+  }
+  const windowed = JSON.parse(await readFile(file, 'utf8'))
+  assert.equal(windowed.window.batches, 2)
+
+  // template check：输出模板记录的官方参照与当前窗口核验（不改 verdict）。
+  logs.length = 0
+  console.log = (...args) => logs.push(args.join(' '))
+  try {
+    assert.equal(await main(['template', 'check', '--config', configFile]), 0)
+  } finally {
+    console.log = originalLog
+  }
+  const checkOutput = logs.join('\n')
+  assert.match(checkOutput, /官方 T 参照（模板记录）：🟢 match/u)
+  assert.match(checkOutput, /官方 T 参照（当前窗口）：🟢 match/u)
 })
 
 test('CLI：template build 缺 --fingerprint 时返回 2 并说明用法', async () => {

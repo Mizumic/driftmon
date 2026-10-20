@@ -98,11 +98,14 @@ Phase 0 的"30 轮"= 30 轮巡检 = 240 次探针组；**实测** 892k token / 8
       `flash 1017` 模板的 T 向量有官方实现背书；
 * [x] `reference check` 可重跑、不联网、不花 token；`status` / `template check` 输出参照状态
       （不改 `gray-watch.json` schema，不影响展示契约）；
-* [x] 离线测试把「工件 T 向量 = 模板 T 向量」固化成回归断言（测试 71 → 77 项）；
+* [x] 离线测试把「工件 T 向量 = 模板 T 向量」固化成回归断言（测试 71 → 78 项）；
+* [x] **核验结论固化进模板工件**：`template build` 写 `officialReference` 块（期望向量 + 来源版本 +
+      `vectorMatch`），`template check` 显示「模板记录 / 当前窗口」；`flash 1017` 模板已重建
+      （窗口与 E9 逐字段一致，仅新增该块；2026-10-20）；
 * [ ] 上游刷新流程实战演练一次（上游换 tokenizer / prompt 模板时，按
-      `docs/TOKENIZER-REFERENCE.md` §4 review `.candidate.json` 再替换）；
-* [ ] `judge` / `gray` 判定链在 T 变化时附带「官方参照是否一致」的归因提示（当前只在
-      `template check` 的 stdout 里显示，未写进告警文件）。
+      `docs/TOKENIZER-REFERENCE.md` §4 review `.candidate.json` 再替换，然后重建模板）；
+* [ ] （**M2，用户决定等真实漂移再做**）`judge` 在 T 漂移时用参照归因——区分「基线过时/换端点」
+      与「tokenizer/模板/请求渲染变化」；当前只在 `template check` 的 stdout 显示，未写进告警文件。
 
 **产出**：`data/reference/official-tokenizer-v41.json`、`src/tokenizer-reference.mjs`、
 `scripts/build-tokenizer-reference.py`、`test/tokenizer-reference.test.mjs`、

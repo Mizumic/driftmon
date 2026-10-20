@@ -170,6 +170,18 @@
     "C": { "prefixTokens": 1584, "hitRatioMedian": 0.8889 },
     "S": { "ttftMedian": 115, "ttftRangeMs": [102, 125] }
   },
+  // 可选（additive）：官方 tokenizer 参照的核验结论，由 template build 固化。
+  // 旧模板没有这个块仍然合法；有块时 validateTemplate 会校验形状与 probeSetHash。
+  "officialReference": {
+    "package": "deepseek-recipe",
+    "version": "0.2.0",
+    "sourceCommit": "935817c…",
+    "tokenizerSha256": "sha256:81f64d12…",
+    "probeSetHash": "sha256:18c0…",
+    "expectedVector": [18, 17, 17, 39, 16],
+    "vectorMatch": true,                  // 模板 T 向量 === 官方期望；模板无 T 数据时为 null
+    "checkedAt": 1792492255097
+  },
   "interpretation": {
     "fingerprintChannel": "system_fingerprint",
     "behaviorChannels": ["L", "G"],     // 权重敏感：灰度换权重时优先看
@@ -180,6 +192,11 @@
 ```
 
 **不变量**：T 向量必须批次间唯一（否则拒绝构建）；模板与 `probeSetHash` 绑定；可随时从 `data/raw` 重建。
+`officialReference` 是**可选附加块**，来源是官方参考实现（`data/reference/`），不是 raw 派生：
+
+* 旧模板没有该块仍合法（向后兼容）；有块时校验 shape + `probeSetHash` 必须与模板一致；
+* `vectorMatch=false` 是**合法记录**（例如模板来自非官方实现/网关），不阻止模板写入，但 `template check` 会提示；
+* 参考工件更新后，模板不会自动改：需要重跑 `template build`（可用 `--since/--until` 复现原窗口）重新固化。
 
 ---
 

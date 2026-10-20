@@ -157,6 +157,10 @@ tokenizer 内容由 SHA-256 锁定）。实测 5 条 T 探针全部精确对上�
 
 即 **`flash 1017` 模板的 T 向量有官方实现背书**，不只是「我们自己观测到它稳定」。
 
+该结论已经**固化进模板工件**：`data/templates/checkpoint-flash_1017.json` 的 `officialReference`
+块记录期望向量、参考实现版本与 `vectorMatch=true`；`template build` 会自动写入，
+`template check` 会显示「模板记录 / 当前窗口」两行核验状态（不改变 verdict 与告警 schema）。
+
 ```bash
 node bin/driftmon.mjs reference check   # 实测窗口 vs 官方参考 → results/reference/tokenizer-check.json
 ```
